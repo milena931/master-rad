@@ -32,7 +32,6 @@ echo "=== [3/5] Instalacija Python zavisnosti ==="
 pip install --upgrade pip
 pip install "ray[rllib]>=2.40.0" \
             "gymnasium[classic-control,box2d]>=1.0.0" \
-            "stable-baselines3>=2.3.0" \
             "torch>=2.0.0" \
             "matplotlib>=3.8.0" \
             "pyyaml>=6.0" \
@@ -65,7 +64,7 @@ echo ""
 echo "  Pokreni eksperiment:"
 echo "    source ~/ray-env/bin/activate"
 echo "    cd ~/master-rad/src"
-echo "    python run_experiments.py --env-key lunarlander --skip-sb3"
+echo "    python run_experiments.py --envs lunarlander"
 echo ""
 echo "  Ili sa --ray-address (ako koristiš više VM-ova):"
 echo "    python train_ray.py --env LunarLander-v3 --workers 8 \\"

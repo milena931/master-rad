@@ -46,7 +46,7 @@ Ili ručno:
 ```bash
 sudo apt update && sudo apt install -y python3-pip python3-venv git
 python3 -m venv ~/ray-env && source ~/ray-env/bin/activate
-pip install "ray[rllib]" "gymnasium[classic-control,box2d]" stable-baselines3 torch matplotlib pyyaml
+pip install "ray[rllib]" "gymnasium[classic-control,box2d]" torch matplotlib pyyaml
 ```
 
 ### Korak 3 — Kopiraj projekat na VM
@@ -68,7 +68,7 @@ cd ~/master-rad/src
 ray start --head --num-cpus=8
 
 # LunarLander skalabilnost: 1, 2, 4, 8 workera
-python run_experiments.py --env-key lunarlander --skip-sb3
+python run_experiments.py --envs lunarlander
 ```
 
 ### Korak 5 — Preuzmi rezultate

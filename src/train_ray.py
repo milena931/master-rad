@@ -9,7 +9,7 @@ Distribuirano treniranje PPO agenta pomoću Ray RLlib.
 Zašto Ray RLlib:
   Ray pokreće N paralelnih EnvRunner procesa koji igraju igru istovremeno.
   Više runnera → više iskustva u sekundi (throughput) → brže učenje.
-  Može da skalira na više mašina (GCP klaster) za razliku od SB3.
+  Može da skalira na više mašina (GCP klaster).
 
 GIF-ovi koje ovaj fajl generiše (ako se zada --gif):
   - random_agent.gif       — agent pre treninga (haos)
@@ -196,7 +196,7 @@ def train(
     # Snimimo random agenta pre treninga (prvi segment)
     if gif_path:
         print("\n  Snimam random agenta (pre treninga)...")
-        r_frames, r_reward = record_episode(env_id, model=None, max_steps=250)
+        r_frames, r_reward = record_episode(env_id, max_steps=250)
         print(f"  → nagrada={r_reward:.0f}")
         evolution_segments.append(("Random (0 iteracija)", r_frames))
 
@@ -279,7 +279,7 @@ def _generate_gifs(
     # Random agent GIF (samo jednom po env-u)
     random_gif = gif_path / "random_agent.gif"
     if not random_gif.exists():
-        r_frames, r_reward = record_episode(env_id, model=None, max_steps=300)
+        r_frames, r_reward = record_episode(env_id, max_steps=300)
         print(f"    Slučajan agent: nagrada={r_reward:.0f}")
         save_gif(r_frames, random_gif)
 

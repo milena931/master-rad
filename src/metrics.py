@@ -11,7 +11,7 @@ from typing import Any
 
 @dataclass
 class TrainingRun:
-    framework: str          # "ray_rllib" ili "stable_baselines3"
+    framework: str          # npr. "ray_rllib"
     env_id: str             # npr. "CartPole-v1"
     num_workers: int        # broj paralelnih env runner-a / n_envs
     seed: int

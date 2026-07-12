@@ -7,7 +7,6 @@ Proof-of-concept za master rad: **paralelizacija treniranja agentskih modela u i
 | Komponenta | Opis |
 |---|---|
 | **Ray RLlib** | Distribuirano PPO treniranje sa N paralelnih `env_runner` procesa |
-| **Stable-Baselines3** | Baseline: isti PPO algoritam, jednoprocesorski, bez distribuiranja |
 | **Gymnasium** | CartPole-v1, LunarLander-v3, BipedalWalker-v3 |
 | **Metrike** | Throughput (koraci/sec), speedup, efikasnost, JSON logovi |
 | **GIF vizualizacija** | Random agent, naučeni agent, evolucija tokom treninga |
@@ -21,7 +20,6 @@ rad/
 │   └── experiments.yaml      # Env-i, PPO hiperparametri, worker counts
 ├── src/
 │   ├── train_ray.py          # Distribuirano treniranje (Ray RLlib)
-│   ├── train_sb3.py          # Baseline treniranje (Stable-Baselines3)
 │   ├── run_experiments.py    # Orchestracija skalabilnost eksperimenata
 │   ├── plot_results.py       # Generisanje grafikona iz JSON rezultata
 │   ├── play_game.py          # Snimanje GIF-ova (random, naučen, evolucija)
@@ -79,7 +77,6 @@ python src/run_experiments.py \
 # BipedalWalker — scaling study (merenje throughputa, ~80 min)
 python src/run_experiments.py \
     --envs bipedalwalker \
-    --skip-sb3 \
     --workers 4 \
     --scaling-only
 ```
@@ -89,7 +86,6 @@ python src/run_experiments.py \
 ```bash
 python src/run_experiments.py \
     --envs bipedalwalker \
-    --skip-sb3 \
     --workers 4 \
     --gif
 ```
@@ -131,7 +127,6 @@ ray attach gcp/ray_cluster.yaml
 cd ~/master-rad
 python src/run_experiments.py \
     --envs bipedalwalker \
-    --skip-sb3 \
     --workers 8 \
     --gif
 
@@ -161,11 +156,10 @@ Iz `results/*.json` i grafikona izvlačiš:
 - **Efikasnost**: `speedup / N` — koliko dobro koristimo dodatne resurse
 - **Kriva učenja**: nagrada tokom iteracija po worker konfiguraciji
 
-## Poređenje SB3 vs Ray
+## Ray RLlib skalabilnost
 
-| | Stable-Baselines3 | Ray RLlib |
+| Workers | Speedup | Efikasnost |
 |---|---|---|
-| Workeri | 1 process, N env-a u 1 mašini | N procesa, distribuirani |
-| Skalabilnost | Ograničena na jednu mašinu | Višestruke mašine (GCP) |
-| Throughput | Baseline | **2-4x** veći sa 4 workera |
-| Namena | Referentna tačka | Glavna tema rada |
+| 1 | 1.00x | 1.00 |
+| 2 | ~1.8x | ~0.90 |
+| 4 | ~3.1x | ~0.78 |

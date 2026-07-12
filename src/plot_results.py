@@ -8,7 +8,7 @@ Grafici:
     - Speedup bar chart (sa idealnim linearnim speedupom)
 
   Ukupno poređenje:
-    - Sva tri okruženja, Ray vs SB3
+    - Sva tri okruženja
 
 Pokretanje:
   python plot_results.py                 # koristi results/ automatski
@@ -34,7 +34,6 @@ ENV_COLORS = {
     "bipedalwalker": "mediumseagreen",
 }
 RAY_COLOR = "steelblue"
-SB3_COLOR = "darkorange"
 
 
 def load_runs(results_dir: Path, framework: str | None = None, env_id: str | None = None) -> list[dict]:
@@ -60,12 +59,8 @@ def plot_single_env(env_id: str, results_dir: Path, output_path: Path) -> None:
         load_runs(results_dir, framework="ray_rllib", env_id=env_id),
         key=lambda r: r["num_workers"],
     )
-    sb3_runs = sorted(
-        load_runs(results_dir, framework="stable_baselines3", env_id=env_id),
-        key=lambda r: r["num_workers"],
-    )
 
-    if not ray_runs and not sb3_runs:
+    if not ray_runs:
         print(f"  Nema rezultata za {env_id}, preskačem.")
         return
 
@@ -82,11 +77,6 @@ def plot_single_env(env_id: str, results_dir: Path, output_path: Path) -> None:
         rewards = [r["episode_return_mean"] for r in run["iterations"]]
         ax.plot(iters, rewards, "o-", markersize=3, color=blues[i % len(blues)],
                 label=f"Ray w={run['num_workers']}")
-    for run in sb3_runs[:1]:
-        iters = list(range(len(run["iterations"])))
-        rewards = [r["episode_return_mean"] for r in run["iterations"]]
-        ax.plot(iters, rewards, "--", color=SB3_COLOR, alpha=0.8,
-                label=f"SB3 n={run['num_workers']}")
     ax.set_xlabel("Iteracija / rollout")
     ax.set_ylabel("Episode return mean")
     ax.legend(fontsize=8)
@@ -99,10 +89,6 @@ def plot_single_env(env_id: str, results_dir: Path, output_path: Path) -> None:
         x_r = [r["num_workers"] for r in ray_runs]
         y_r = [r.get("avg_throughput_steps_per_sec", 0) for r in ray_runs]
         ax.plot(x_r, y_r, "o-", color=RAY_COLOR, linewidth=2, markersize=6, label="Ray RLlib")
-    if sb3_runs:
-        x_s = [r["num_workers"] for r in sb3_runs]
-        y_s = [r.get("avg_throughput_steps_per_sec", 0) for r in sb3_runs]
-        ax.plot(x_s, y_s, "s--", color=SB3_COLOR, linewidth=2, markersize=6, alpha=0.8, label="SB3")
     ax.set_xlabel("Workers / n_envs")
     ax.set_ylabel("Koraci/sec")
     ax.legend(fontsize=8)

@@ -65,7 +65,7 @@ setup_commands:
     - sudo apt-get update -y
     - sudo apt-get install -y python3-pip python3-venv swig build-essential
     - pip3 install --upgrade pip
-    - pip3 install "ray[rllib]>=2.40.0" "gymnasium[classic-control]>=1.0.0" stable-baselines3 torch matplotlib pyyaml imageio pillow google-api-python-client
+    - pip3 install "ray[rllib]>=2.40.0" "gymnasium[classic-control]>=1.0.0" torch matplotlib pyyaml imageio pillow google-api-python-client
     - pip3 install "gymnasium[box2d]>=1.0.0"
 
 head_setup_commands:
