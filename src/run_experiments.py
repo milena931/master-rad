@@ -3,24 +3,19 @@ Orkestrator skalabilnost eksperimenata za master rad.
 
 Šta radi:
   Za svako odabrano okruženje (CartPole, LunarLander, BipedalWalker):
-    1. Snimi random agenta (GIF)
-    2. Pokreni Ray sa 1, 2, 4 workera → JSON metrike
-    3. Pokreni SB3 baseline (opciono)
-    4. Generiši GIF-ove: random, naučen, evolution
+    1. Pokreni Ray sa 1, 2, 4 workera → JSON metrike
+    2. Generiši GIF-ove: random, naučen, evolution
   Na kraju ispiše tabelu speedup/efikasnost za sve envove.
 
 Pokretanje:
-  # Sve tri igre, samo Ray (brže):
-  python run_experiments.py --envs cartpole lunarlander bipedalwalker --skip-sb3
+  # Sve tri igre:
+  python run_experiments.py --envs cartpole lunarlander bipedalwalker
 
-  # Samo LunarLander, sa SB3 poređenjem:
-  python run_experiments.py --envs lunarlander
-
-  # Na GCP klasteru (Ray na GCP, SB3 lokalno):
-  python run_experiments.py --envs lunarlander --ray-address ray://34.90.x.x:10001
-
-  # Sa GIF-ovima:
+  # Samo CartPole sa GIF-ovima:
   python run_experiments.py --envs cartpole --gif
+
+  # Na GCP klasteru:
+  python run_experiments.py --envs lunarlander --ray-address ray://34.90.x.x:10001
 """
 
 from __future__ import annotations
@@ -32,7 +27,6 @@ from pathlib import Path
 import yaml
 
 from train_ray import train as train_ray
-from train_sb3 import train as train_sb3
 
 ROOT = Path(__file__).parent.parent
 CONFIG_DEFAULT = ROOT / "config" / "experiments.yaml"
@@ -51,7 +45,6 @@ def run_all_experiments(
     config_path: Path = CONFIG_DEFAULT,
     output_dir: Path = RESULTS_DEFAULT,
     worker_counts: list[int] | None = None,
-    skip_sb3: bool = False,
     ray_address: str | None = None,
     generate_gifs: bool = True,
     scaling_only: bool = False,
@@ -76,7 +69,7 @@ def run_all_experiments(
     print(f"  GIF-ovi:   {'da' if generate_gifs else 'ne'}")
     if scaling_only:
         print("  Mod:       SCALING ONLY (kratko, samo throughput/speedup)")
-    if ray_address:
+    if ray_address:  
         print(f"  Ray:       {ray_address}  (GCP)")
     else:
         print("  Ray:       lokalni klaster")
@@ -134,21 +127,6 @@ def run_all_experiments(
                 ppo_params=ppo_params,
             )
             env_results.append(run.to_dict())
-
-        # --- SB3 baseline run-ovi (opciono) ---
-        if not skip_sb3:
-            for n_envs in effective_workers:
-                print(f"\n>>> SB3 baseline | n_envs={n_envs} | {env_id}")
-                run = train_sb3(
-                    env_id=env_id,
-                    n_envs=n_envs,
-                    total_timesteps=env_cfg.get("sb3_timesteps", cfg["sb3"]["total_timesteps"]),
-                    output_dir=str(output_dir),
-                    checkpoint_every=env_cfg.get("checkpoint_every", 25_000),
-                    gif_dir=str(gif_dir) if gif_dir else None,
-                    ppo_params=ppo_params,
-                )
-                env_results.append(run.to_dict())
 
         # Sačuvaj summary za ovaj env
         summary_path = output_dir / f"summary_{env_key}.json"
@@ -238,7 +216,6 @@ def main() -> None:
         default=None,
         help="Worker counts (default iz config-a: [1, 2, 4])",
     )
-    parser.add_argument("--skip-sb3", action="store_true", help="Preskoči SB3 baseline")
     parser.add_argument("--ray-address", default=None, help='GCP: "ray://IP:10001"')
     parser.add_argument("--gif", action="store_true", help="Generiši GIF-ove za svaki env")
     parser.add_argument(
@@ -257,7 +234,6 @@ def main() -> None:
         config_path=Path(args.config),
         output_dir=Path(args.output),
         worker_counts=args.workers,
-        skip_sb3=args.skip_sb3,
         ray_address=args.ray_address,
         generate_gifs=args.gif,
         scaling_only=args.scaling_only,
