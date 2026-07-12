@@ -156,7 +156,7 @@ def train(
     out_path = Path(output_dir) if output_dir else ROOT / "results"
     gif_path = Path(gif_dir) if gif_dir else None
 
-    run = TrainingRun(
+    run = TrainingRun( # iz metrics.py
         framework="ray_rllib",
         env_id=env_id,
         num_workers=num_env_runners,
