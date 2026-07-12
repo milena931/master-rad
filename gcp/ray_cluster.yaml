@@ -1,0 +1,87 @@
+# =============================================================================
+# ray_cluster.yaml — Ray Autoscaler konfiguracija za Google Cloud Platform
+#
+# Pokretanje:
+#   pip install "ray[default]"
+#   ray up gcp/ray_cluster.yaml               # kreira klaster
+#   ray submit gcp/ray_cluster.yaml src/train_ray.py --workers 8
+#   ray down gcp/ray_cluster.yaml             # OBAVEZNO ugasiti!
+#
+# Troškovi (procena):
+#   1 head (e2-standard-4) + 2 workers (e2-standard-4) = ~$0.40/h
+#   Za 4h eksperimenata = ~$1.60 (od $300 kredita)
+# =============================================================================
+
+cluster_name: master-rad-rl
+
+# Maksimum workera (autoscaler ih podiže po potrebi)
+max_workers: 4
+
+# Provajder: Google Cloud
+provider:
+    type: gcp
+    region: us-central1
+    availability_zone: us-central1-a
+    project_id: master-rad-501412
+
+auth:
+    ssh_user: ubuntu
+
+# Zajednička konfiguracija VM-ova
+available_node_types:
+    ray_head_default:
+        resources: {}
+        node_config:
+            machineType: e2-standard-4       # 4 vCPU, 16 GB — head node
+            disks:
+                - boot: true
+                  autoDelete: true
+                  type: PERSISTENT
+                  initializeParams:
+                      diskSizeGb: 50
+                      sourceImage: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+
+    ray_worker_default:
+        min_workers: 2       # uvek drži 2 worker VM-a aktivna
+        max_workers: 4
+        resources: {}
+        node_config:
+            machineType: e2-standard-8       # 8 vCPU, 32 GB — worker nodeovi
+            disks:
+                - boot: true
+                  autoDelete: true
+                  type: PERSISTENT
+                  initializeParams:
+                      diskSizeGb: 50
+                      sourceImage: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+            # Preemptible VM = 60-91% jeftinija (može biti prekinuta, OK za eksperimente)
+            scheduling:
+                - preemptible: true
+
+head_node_type: ray_head_default
+
+# Skripte koje se izvršavaju na svakom čvoru pri podizanju
+setup_commands:
+    - sudo apt-get update -y
+    - sudo apt-get install -y python3-pip python3-venv swig build-essential
+    - pip3 install --upgrade pip
+    - pip3 install "ray[rllib]>=2.40.0" "gymnasium[classic-control]>=1.0.0" stable-baselines3 torch matplotlib pyyaml imageio pillow google-api-python-client
+    - pip3 install "gymnasium[box2d]>=1.0.0"
+
+head_setup_commands:
+    - echo "Head node spreman"
+
+worker_setup_commands:
+    - echo "Worker node spreman"
+
+# Komanda za podizanje Ray-a na head nodeu
+head_start_ray_commands:
+    - ray start --head --port=6379 --dashboard-host=0.0.0.0 --autoscaling-config=~/ray_bootstrap_config.yaml --block
+
+worker_start_ray_commands:
+    - ray start --address=$RAY_HEAD_IP:6379 --block
+
+# Prenos fajlova projekta na klaster
+file_mounts:
+    ~/master-rad/src: ./src
+    ~/master-rad/config: ./config

@@ -1,0 +1,20 @@
+{
+  "framework": "stable_baselines3",
+  "env_id": "CartPole-v1",
+  "num_workers": 2,
+  "seed": 42,
+  "start_time": 1783161666.2651634,
+  "end_time": 1783161683.1751928,
+  "iterations": [
+    {
+      "iteration": 0,
+      "episode_return_mean": 27.87,
+      "throughput_steps_per_sec": 584.3,
+      "elapsed_sec": 14.02
+    }
+  ],
+  "duration_sec": 16.910029411315918,
+  "final_reward": 27.87,
+  "best_reward": 27.87,
+  "avg_throughput_steps_per_sec": 584.3
+}

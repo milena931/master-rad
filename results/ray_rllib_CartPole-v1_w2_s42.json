@@ -1,0 +1,35 @@
+{
+  "framework": "ray_rllib",
+  "env_id": "CartPole-v1",
+  "num_workers": 2,
+  "seed": 42,
+  "start_time": 1783161626.8927987,
+  "end_time": 1783161654.4471452,
+  "iterations": [
+    {
+      "iteration": 0,
+      "episode_return_mean": 23.511764705882353,
+      "throughput_steps_per_sec": 502.0,
+      "elapsed_sec": 13.87,
+      "iter_sec": 7.97
+    },
+    {
+      "iteration": 1,
+      "episode_return_mean": 33.87179487179487,
+      "throughput_steps_per_sec": 568.5,
+      "elapsed_sec": 20.91,
+      "iter_sec": 7.04
+    },
+    {
+      "iteration": 2,
+      "episode_return_mean": 57.01,
+      "throughput_steps_per_sec": 601.8,
+      "elapsed_sec": 27.55,
+      "iter_sec": 6.65
+    }
+  ],
+  "duration_sec": 27.554346561431885,
+  "final_reward": 57.01,
+  "best_reward": 57.01,
+  "avg_throughput_steps_per_sec": 557.4
+}

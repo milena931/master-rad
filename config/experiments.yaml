@@ -1,0 +1,88 @@
+# Konfiguracija eksperimenata za master rad PoC
+#
+# PPO hiperparametri su podeljeni u dva nivoa:
+#   ppo_defaults  — zajednički za sve envove ako env nema ppo_override
+#   ppo_override  — specifični parametri za ovaj env (prepisuju defaults)
+#
+# Izvor dobrih parametara: rl-baselines3-zoo
+#   https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml
+
+environments:
+
+  cartpole:
+    id: CartPole-v1
+    target_reward: 450
+    max_iterations: 80
+    sb3_timesteps: 100_000
+    checkpoint_every: 25_000
+    evolution_every: 15
+    description: "Balansiranje štapa — brzo, bez GPU"
+    # CartPole je lak — default parametri su dovoljni, nema ppo_override
+
+  lunarlander:
+    id: LunarLander-v3
+    target_reward: 200
+    max_iterations: 300
+    sb3_timesteps: 1_000_000
+    checkpoint_every: 200_000
+    evolution_every: 40
+    description: "Sletanje rakete — srednja zahtevnost, bez GPU"
+    ppo_override:
+      # Iz rl-baselines3-zoo za LunarLander
+      lr: 0.0003
+      gamma: 0.999
+      gae_lambda: 0.98
+      ent_coef: 0.01           # malo istraživanja pomaže
+      clip_range: 0.2
+      n_steps: 1024            # SB3: koraka po env pre ažuriranja
+      batch_size: 64           # SB3: mini-batch veličina
+      n_epochs: 4
+      train_batch_size: 8192   # Ray: ukupno koraka po iteraciji
+
+  bipedalwalker:
+    id: BipedalWalker-v3
+    target_reward: 250
+    # --- Puno treniranje lokalno (w=8, ~1.5-2h) ---
+    max_iterations_local: 800    # 800 × 16384 = ~13M koraka, ~5h sa w=8 na GCP
+    # --- Puno treniranje na GCP (w=8, ~30 min) ---
+    max_iterations: 1500         # 1500 × 16384 = ~24M koraka — samo za GCP
+    sb3_timesteps: 5_000_000
+    checkpoint_every: 500_000
+    evolution_every: 50          # češće checkpoints — 50×16384 = ~800K koraka
+    # --- Scaling study (kratko, samo throughput/speedup, lokalno ili GCP) ---
+    scaling_max_iterations: 80
+    scaling_worker_counts: [1, 2, 4, 8]
+    description: "Robot koji hoda — 5M+ koraka, preporučeno GCP"
+    install_note: "pip install 'gymnasium[box2d]'"
+    ppo_override:
+      # Iz rl-baselines3-zoo za BipedalWalker-v3
+      # Ovo su KLJUČNI parametri — sa default PPO agent ne nauči ništa
+      lr: 0.00025              # manji learning rate = stabilnije učenje
+      gamma: 0.999             # gleda daleko u budućnost (duge epizode)
+      gae_lambda: 0.95         # balansi bias/variance u advantage proceni
+      ent_coef: 0.001          # malo entropy = ne treba puno istraživanja
+      clip_range: 0.2
+      n_steps: 2048            # SB3: duži rollout za kompleksne zadatke
+      batch_size: 64           # SB3: mali batch = stabilniji gradijenti
+      n_epochs: 10             # SB3: više epoha po rollout-u
+      train_batch_size: 16384  # Ray: veći batch za stabilnost
+
+# Skalabilnost: koliko paralelnih workera/env-ova testiramo
+worker_counts: [1, 2, 4]
+
+# PPO default vrednosti — koriste se ako env nema ppo_override
+ppo_defaults:
+  lr: 0.0003
+  gamma: 0.99
+  gae_lambda: 0.95
+  ent_coef: 0.0
+  clip_range: 0.2
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  train_batch_size: 4000
+
+# SB3 baseline podešavanja (fallback)
+sb3:
+  total_timesteps: 100_000
+  n_envs: 4
