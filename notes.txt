@@ -50,3 +50,17 @@ python run_experiments.py --envs bipedalwalker \
     --config ../config/experiments_gcp.yaml --gif
 
 ray down gcp/ray_cluster_bipedalwalker.yaml
+
+
+ovo se na lunarlander odnosi
+Single VM je 63% brži od multi-VM klastera — potvrđuje tezu da mrežni overhead ubija performanse za LunarLander. Ipak, lokalni laptop je i dalje brži jer e2 vCPU-ovi su deljeni virtuelni procesori, slabiji od fizičkih jezgara laptopa.
+Konfiguracija	Steps/sec	Sec/iter
+Lokalno w=4
+1025
+~8s
+GCP multi-VM w=8
+365
+~22s
+GCP single-VM w=12
+595
+~13.8s

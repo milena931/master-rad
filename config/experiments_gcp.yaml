@@ -1,0 +1,97 @@
+# Konfiguracija eksperimenata za GCP — optimizovana na osnovu empirijskih merenja
+#
+# Ključna lekcija iz eksperimenata:
+#   train_batch_size mora skalirati proporcionalno sa brojem workera.
+#   Pravilo: train_batch_size ≈ num_workers × 2048 koraka/worker
+#
+#   Primjer:
+#     w=1  → 1  × 2048 =  2048  (default je dovoljan)
+#     w=4  → 4  × 2048 =  8192  (lokalni default)
+#     w=8  → 8  × 2048 = 16384  (GCP standard)
+#     w=12 → 12 × 2048 = 24576  (GCP w=12)
+#
+#   Bez skaliranja: w=12 sa batch=8192 → svaki worker dobija samo 682 koraka
+#   → gradijenti su previše šumoviti → policy ne konvergira
+#
+# Empirijski rezultati (LunarLander, GCP e2-standard-16):
+#   Multi-VM w=8:       365 koraka/sec, ~22s/iter  ← mrežni overhead dominira
+#   Single-VM w=12:     595 koraka/sec, ~14s/iter  ← bolje, ali batch premali
+#   Single-VM w=8 (ovaj config): očekivano ~800-1000 koraka/sec, ~10s/iter
+#
+# Pokretanje (single VM, workers 1,2,4,8):
+#   python run_experiments.py --envs lunarlander --workers 1 2 4 8 --gif \
+#       --config ../config/experiments_gcp.yaml
+
+environments:
+
+  cartpole:
+    id: CartPole-v1
+    target_reward: 450
+    max_iterations: 80
+    checkpoint_every: 25_000
+    evolution_every: 20
+    description: "Balansiranje štapa — brzo, bez GPU"
+    # CartPole je lak — default batch je dovoljan i za GCP
+
+  lunarlander:
+    id: LunarLander-v3
+    target_reward: 200
+    max_iterations: 400
+    checkpoint_every: 200_000
+    evolution_every: 60
+    description: "Sletanje rakete — GCP single-VM optimizovano"
+    ppo_override:
+      lr: 0.0003
+      gamma: 0.999
+      gae_lambda: 0.98
+      ent_coef: 0.01
+      clip_range: 0.2
+      # 8 workera × 2048 koraka/worker = 16384
+      # Svaki worker dobija dovoljno iskustva pre PPO update-a
+      train_batch_size: 16384
+
+  lunarlander_w12:
+    id: LunarLander-v3
+    target_reward: 200
+    max_iterations: 400
+    checkpoint_every: 200_000
+    evolution_every: 60
+    description: "LunarLander sa 12 workera — veći batch za stabilnost"
+    ppo_override:
+      lr: 0.0003
+      gamma: 0.999
+      gae_lambda: 0.98
+      ent_coef: 0.01
+      clip_range: 0.2
+      # 12 workera × 2048 koraka/worker = 24576
+      train_batch_size: 24576
+
+  bipedalwalker:
+    id: BipedalWalker-v3
+    target_reward: 250
+    max_iterations: 1500
+    checkpoint_every: 500_000
+    evolution_every: 75
+    description: "Robot koji hoda — GCP multi-VM optimizovano"
+    install_note: "pip install 'gymnasium[box2d]'"
+    ppo_override:
+      lr: 0.00025
+      gamma: 0.999
+      gae_lambda: 0.95
+      ent_coef: 0.001
+      clip_range: 0.2
+      # 8 workera × 4096 koraka/worker = 32768 (veći batch za stabilnost)
+      train_batch_size: 32768
+
+# GCP worker counts za skalabilnost eksperiment
+# single-VM (e2-standard-16): max ~14 workera bez degradacije
+worker_counts: [1, 2, 4, 8]
+
+# PPO default vrednosti
+ppo_defaults:
+  lr: 0.0003
+  gamma: 0.99
+  gae_lambda: 0.95
+  ent_coef: 0.0
+  clip_range: 0.2
+  train_batch_size: 4000
