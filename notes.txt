@@ -1,0 +1,52 @@
+gcloud compute scp --recurse \
+  ray-master-rad-rl-head-4a014bad-compute:/home/ubuntu/master-rad/results/ \
+  /home/milena/Documents/etf/master/master-rad/results/gcp/ \
+  --zone=us-central1-a
+
+=== ZAŠTO LUNARLANDER NA JEDNOJ VM, BIPEDALWALKER NA VIŠE VM-OVA ===
+
+LunarLander je LAKO okruženje — svaki env korak je brz (~0.1ms, čista 2D fizika).
+Sa multi-VM klasterom, mrežna sinhronizacija između VM-ova (milisekunde) DOMINIRA
+nad samim računanjem. Rezultat: više VM-ova = sporiji trening.
+
+Mereno empirijski:
+  Lokalno  w=4:  1025 koraka/sec,  ~8s/iter
+  GCP      w=8:   365 koraka/sec, ~22s/iter  ← sporije na više VM-ova!
+
+Jedna jaka VM (sve jezgre na istoj mašini) eliminiše mrežni overhead jer workeri
+komuniciraju kroz lokalnu memoriju (RAM), ne kroz mrežu.
+
+---
+
+BipedalWalker je TEŠKO okruženje — svaki env korak je spor (~5-10ms, složena Box2D
+fizika sa zglobovima i kontaktima).
+Ovde computation >> network overhead, pa mrežna sinhronizacija između VM-ova
+postaje zanemariva u odnosu na vreme koje workeri provode simulirajući fiziku.
+Multi-VM klaster stvarno ubrzava trening jer workeri rade "teži" posao.
+
+Zaključak za master rad:
+  Korist od distribuiranja na više mašina zavisi od odnosa
+  "vreme računanja po koraku" vs "vreme mrežne sinhronizacije".
+  Za lake envove (LunarLander): single-VM je optimalno.
+  Za teške envove (BipedalWalker): multi-VM donosi stvarnu korist.
+
+-----------------------------------------------------------------------------
+
+
+ray up gcp/ray_cluster_lunarlander.yaml
+
+# Na VM:
+python run_experiments.py --envs lunarlander --workers 1 2 4 8 --gif
+
+ray down gcp/ray_cluster_lunarlander.yaml
+
+ray up gcp/ray_cluster_bipedalwalker.yaml
+
+------------------------------------------------------------------------------
+
+# Na VM:
+python run_experiments.py --envs bipedalwalker \
+    --workers 1 2 4 8 16 \
+    --config ../config/experiments_gcp.yaml --gif
+
+ray down gcp/ray_cluster_bipedalwalker.yaml

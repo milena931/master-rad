@@ -1,0 +1,62 @@
+# =============================================================================
+# ray_cluster_lunarlander.yaml — Jedna jaka VM za LunarLander
+#
+# Zašto jedna VM:
+#   LunarLander env korak je brz (~0.1ms) → mrežni overhead između VM-ova
+#   dominira nad računanjem. Jedna VM sa 16 jezgara je brža od multi-VM klastera.
+#
+# Konfiguracija:
+#   - Jedna e2-standard-16 VM (16 vCPU, 64 GB RAM)
+#   - Nema worker VM-ova (max_workers: 0)
+#   - Podržava workers 1, 2, 4, 8, 16 (sve na jednoj mašini)
+#
+# Pokretanje:
+#   ray up gcp/ray_cluster_lunarlander.yaml
+#   ray attach gcp/ray_cluster_lunarlander.yaml
+#   # Na VM:
+#   python run_experiments.py --envs lunarlander --workers 1 2 4 8 --gif
+#   ray down gcp/ray_cluster_lunarlander.yaml
+#
+# Cena: e2-standard-16 = ~$0.54/h → za ~2h = ~$1.08
+# =============================================================================
+
+cluster_name: master-rad-lunarlander
+
+max_workers: 0   # nema worker VM-ova, sve na head nodeu
+
+provider:
+    type: gcp
+    region: us-central1
+    availability_zone: us-central1-a
+    project_id: master-rad-501412   # project id
+
+auth:
+    ssh_user: ubuntu
+
+available_node_types:
+    ray_head_default:
+        resources: {}
+        node_config:
+            machineType: e2-standard-16   # 16 vCPU, 64 GB — sve na jednoj mašini
+            disks:
+                - boot: true
+                  autoDelete: true
+                  type: PERSISTENT
+                  initializeParams:
+                      diskSizeGb: 60
+                      sourceImage: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+
+head_node_type: ray_head_default
+
+setup_commands:
+    - sudo apt-get update -y
+    - sudo apt-get install -y python3-pip python3-venv swig build-essential
+    - pip3 install --upgrade pip
+    - pip3 install "ray[rllib]>=2.40.0" "gymnasium[classic-control,box2d]>=1.0.0" torch matplotlib pyyaml imageio pillow
+
+head_start_ray_commands:
+    - ray start --head --port=6379 --dashboard-host=0.0.0.0 --num-cpus=16 --block
+
+file_mounts:
+    ~/master-rad/src: ./src
+    ~/master-rad/config: ./config
