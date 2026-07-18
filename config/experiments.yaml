@@ -49,7 +49,7 @@ environments:
     install_note: "pip install 'gymnasium[box2d]'"
     ppo_override:
       # Ključni parametri — sa default PPO agent ne nauči ništa
-      lr: 0.00025              # manji learning rate = stabilnije učenje
+      lr: 0.003              # manji learning rate = stabilnije učenje
       gamma: 0.999             # gleda daleko u budućnost (duge epizode)
       gae_lambda: 0.95         # balansi bias/variance u advantage proceni
       ent_coef: 0.001          # malo entropy = ne treba puno istraživanja

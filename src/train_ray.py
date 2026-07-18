@@ -54,7 +54,6 @@ def _register_clipped_envs() -> None:
     register_env("BipedalWalker-v3-clipped", _make_clipped_bipedal)
 
 
-_register_clipped_envs()
 from play_game import (
     build_evolution_gif,
     record_episode,
@@ -151,6 +150,8 @@ def train(
     else:
         ray.init(ignore_reinit_error=True)
         print("Lokalni Ray klaster podignut.")
+
+    _register_clipped_envs()
 
     p = ppo_params or {}
     out_path = Path(output_dir) if output_dir else ROOT / "results"
