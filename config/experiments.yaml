@@ -35,26 +35,35 @@ environments:
 
   bipedalwalker:
     id: BipedalWalker-v3
-    target_reward: 250
+    target_reward: 300 #stoji da ovo treba da bi bilo reseno
     # --- Puno treniranje lokalno (w=8, ~1.5-2h) ---
-    max_iterations_local: 800    # 800 × 16384 = ~13M koraka
+    # 76 × 65536 ≈ 5M koraka, koliko i SB3 referentni model
+    max_iterations_local: 80
     # --- Puno treniranje na GCP (w=8, ~30 min) ---
-    max_iterations: 1500         # 1500 × 16384 = ~24M koraka — samo za GCP
+    max_iterations: 80           # 80 × 65536 ≈ 5.2M koraka
     checkpoint_every: 500_000
-    evolution_every: 50          # 50×16384 = ~800K koraka po snapshot-u
+    evolution_every: 15          # 15×65536 ≈ 1M koraka po snapshot-u
     # --- Scaling study (kratko, samo throughput/speedup, lokalno ili GCP) ---
     scaling_max_iterations: 80
     scaling_worker_counts: [1, 2, 4, 8]
-    description: "Robot koji hoda — 5M+ koraka, preporučeno GCP"
+    description: "Robot koji hoda — 5M koraka, preporučeno GCP"
     install_note: "pip install 'gymnasium[box2d]'"
     ppo_override:
-      # Ključni parametri — sa default PPO agent ne nauči ništa
-      lr: 0.003              # manji learning rate = stabilnije učenje
-      gamma: 0.999             # gleda daleko u budućnost (duge epizode)
-      gae_lambda: 0.95         # balansi bias/variance u advantage proceni
-      ent_coef: 0.001          # malo entropy = ne treba puno istraživanja
-      clip_range: 0.2
-      train_batch_size: 16384  # veći batch za stabilnost
+      # Parametri iz sb3/ppo-BipedalWalker-v3 (HuggingFace, nagrada 288 ± 2)
+      # https://huggingface.co/sb3/ppo-BipedalWalker-v3
+      lr: 0.0003
+      gamma: 0.999
+      gae_lambda: 0.95
+      ent_coef: 0.0
+      clip_range: 0.18
+      # n_steps=2048 × n_envs=32 → ukupni batch po iteraciji
+      train_batch_size: 65_536
+      # SGD minibatch (SB3: batch_size=64)
+      sgd_minibatch_size: 4096
+      # Broj SGD prolaza po iteraciji (SB3: n_epochs=10)
+      num_sgd_iter: 10
+      # Normalizacija opservacija (SB3: normalize=True, norm_obs=True)
+      normalize_obs: true
 
 # Skalabilnost: koliko paralelnih workera/env-ova testiramo
 worker_counts: [1, 2, 4]
