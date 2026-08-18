@@ -64,19 +64,36 @@ def record_ray_algo(
     """
     Snima epizodu koristeći Ray algo koji je JOŠ U MEMORIJI (tokom treninga).
     Ne treba učitavati checkpoint — algo je živ.
+
+    Važno: prolazi kroz local_worker().compute_single_action() umesto
+    direktno algo.compute_single_action(), jer local_worker primenjuje
+    isti MeanStdFilter koji se koristi pri treningu. Bez toga, policy
+    prima nenormalizovane opservacije i loše se ponaša (čak i ako je
+    dobro istreniran).
     """
     env = gym.make(env_id, render_mode="rgb_array")
     obs, _ = env.reset()
     frames: list[np.ndarray] = []
     total_reward = 0.0
 
+    # Pokušaj da koristimo local_worker koji ima obs filter u svom pipeline-u.
+    # Ovo je potrebno kada je normalize_obs=True (MeanStdFilter):
+    # algo.compute_single_action() zaobilazi filter i šalje sirove opservacije
+    # policy-ju → policy vidi ulaze koji su drugačiji od treninga → loš rezultat.
+    try:
+        _worker = algo.workers.local_worker()
+        def _infer(o):
+            return _worker.compute_single_action(o, explore=False)
+    except Exception:
+        def _infer(o):
+            return algo.compute_single_action(o, explore=False)
+
     for _ in range(max_steps):
         frame = env.render()
         if frame is not None:
             frames.append(frame)
 
-        # compute_single_action radi za i diskretne i kontinualne akcije
-        action = algo.compute_single_action(obs)
+        action = _infer(obs)
         obs, reward, terminated, truncated, _ = env.step(action)
         total_reward += float(reward)
         if terminated or truncated:

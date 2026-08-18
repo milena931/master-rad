@@ -27,6 +27,7 @@ from pathlib import Path
 import yaml
 
 from train_ray import train as train_ray
+from evaluate_agent import evaluate as evaluate_agent
 
 ROOT = Path(__file__).parent.parent
 CONFIG_DEFAULT = ROOT / "config" / "experiments.yaml"
@@ -48,6 +49,7 @@ def run_all_experiments(
     ray_address: str | None = None,
     generate_gifs: bool = True,
     scaling_only: bool = False,
+    evaluate_episodes: int = 0,
 ) -> dict[str, list[dict]]:
     """
     Pokreće eksperimente za sve tražene envove.
@@ -56,6 +58,9 @@ def run_all_experiments(
                    scaling_worker_counts u config-u, koristi te vrednosti.
                    Rezultat: kratki run koji meri throughput i speedup,
                    bez čekanja na konvergenciju (idealno za BipedalWalker lokalno).
+    evaluate_episodes — ako > 0, posle svakog treninga sačuva checkpoint i
+                        pokrene evaluate_episodes epizoda radi mean ± std.
+                        Rezultati se dodaju u summary JSON.
     """
     cfg = load_config(config_path)
     workers = worker_counts or cfg["worker_counts"]
@@ -67,9 +72,11 @@ def run_all_experiments(
     print(f"  Okruženja: {env_keys}")
     print(f"  Workers:   {workers}")
     print(f"  GIF-ovi:   {'da' if generate_gifs else 'ne'}")
+    if evaluate_episodes > 0:
+        print(f"  Evaluacija: {evaluate_episodes} epizoda po runu (mean ± std)")
     if scaling_only:
         print("  Mod:       SCALING ONLY (kratko, samo throughput/speedup)")
-    if ray_address:  
+    if ray_address:
         print(f"  Ray:       {ray_address}  (GCP)")
     else:
         print("  Ray:       lokalni klaster")
@@ -113,6 +120,10 @@ def run_all_experiments(
         # --- Ray RLlib run-ovi ---
         for n_workers in effective_workers:
             print(f"\n>>> Ray RLlib | env_runners={n_workers} | {env_id}")
+
+            # Checkpoint se uvek čuva — potreban i za evaluaciju i za kasniju analizu
+            ckpt_dir = str(output_dir / "checkpoints" / f"ppo_{env_key}_w{n_workers}")
+
             run = train_ray(
                 env_id=env_id,
                 num_env_runners=n_workers,
@@ -125,8 +136,47 @@ def run_all_experiments(
                 gif_dir=str(gif_dir) if gif_dir else None,
                 evolution_every=env_cfg.get("evolution_every", 10),
                 ppo_params=ppo_params,
+                checkpoint_dir=ckpt_dir,
             )
-            env_results.append(run.to_dict())
+
+            run_dict = run.to_dict()
+
+            # Evaluacija sa više epizoda → mean ± std
+            if evaluate_episodes > 0:
+                ckpt = run.checkpoint_path
+                if ckpt and ckpt != "None":
+                    print(f"\n>>> Evaluacija ({evaluate_episodes} epizoda) | w={n_workers}")
+                    eval_gif_dir = str(gif_dir) if gif_dir else None
+                    try:
+                        eval_result = evaluate_agent(
+                            checkpoint_path=ckpt,
+                            env_id=env_id,
+                            n_episodes=evaluate_episodes,
+                            gif_dir=eval_gif_dir,
+                            gif_tag=f"ppo_w{n_workers}",
+                        )
+                        run_dict["evaluation"] = {
+                            "n_episodes": eval_result["n_episodes"],
+                            "mean_reward": eval_result["mean"],
+                            "std_reward": eval_result["std"],
+                            "min_reward": eval_result["min"],
+                            "max_reward": eval_result["max"],
+                            "gif_path": eval_result["gif_path"],
+                        }
+                        print(
+                            f"  Evaluacija w={n_workers}: "
+                            f"mean={eval_result['mean']:.2f} ± {eval_result['std']:.2f}"
+                        )
+                    except Exception as exc:
+                        print(f"  [UPOZORENJE] Evaluacija nije uspela: {exc}")
+                        print(f"  Checkpoint: {ckpt}")
+                        print(f"  Možeš pokrenuti ručno: python src/evaluate_agent.py "
+                              f"--checkpoint {ckpt} --env {env_id} --episodes {evaluate_episodes}")
+                else:
+                    print(f"  [UPOZORENJE] Checkpoint nije sačuvan — evaluacija preskočena.")
+                    print(f"  Proveri da li je {ckpt_dir} validan RLlib checkpoint.")
+
+            env_results.append(run_dict)
 
         # Sačuvaj summary za ovaj env
         summary_path = output_dir / f"summary_{env_key}.json"
@@ -145,15 +195,24 @@ def run_all_experiments(
 
 
 def _print_env_summary(env_key: str, env_id: str, results: list[dict]) -> None:
+    has_eval = any("evaluation" in r for r in results)
     print(f"\n  --- Rezultati: {env_id} ---")
-    print(f"  {'Framework':<22} {'Workers':>7} {'Duration':>10} {'Best Rwd':>10} {'Steps/s':>9}")
-    print(f"  {'-'*63}")
+    if has_eval:
+        print(f"  {'Framework':<22} {'Workers':>7} {'Duration':>10} {'Best Rwd':>10} {'Steps/s':>9} {'Eval mean±std':>18}")
+        print(f"  {'-'*82}")
+    else:
+        print(f"  {'Framework':<22} {'Workers':>7} {'Duration':>10} {'Best Rwd':>10} {'Steps/s':>9}")
+        print(f"  {'-'*63}")
     for r in results:
-        print(
+        line = (
             f"  {r['framework']:<22} {r['num_workers']:>7} "
             f"{r['duration_sec']:>9.1f}s {r.get('best_reward', 0):>10.1f} "
             f"{r.get('avg_throughput_steps_per_sec', 0):>9.0f}"
         )
+        if has_eval and "evaluation" in r:
+            ev = r["evaluation"]
+            line += f"  {ev['mean_reward']:>7.2f} ± {ev['std_reward']:<7.2f}"
+        print(line)
 
     ray_runs = sorted(
         [r for r in results if r["framework"] == "ray_rllib"],
@@ -227,6 +286,17 @@ def main() -> None:
             "Idealno za BipedalWalker na lokalnoj mašini (traje ~80 min umesto 15h)."
         ),
     )
+    parser.add_argument(
+        "--evaluate",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "Posle svakog treninga pokreni N evaluacionih epizoda. "
+            "Ispisuje mean ± std nagrade i čuva best epizodu kao GIF. "
+            "Primer: --evaluate 15"
+        ),
+    )
     args = parser.parse_args()
 
     run_all_experiments(
@@ -237,6 +307,7 @@ def main() -> None:
         ray_address=args.ray_address,
         generate_gifs=args.gif,
         scaling_only=args.scaling_only,
+        evaluate_episodes=args.evaluate,
     )
 
 

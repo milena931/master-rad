@@ -14,10 +14,10 @@ class TrainingRun:
     framework: str          # npr. "ray_rllib"
     env_id: str             # npr. "CartPole-v1"
     num_workers: int        # broj paralelnih env runner-a / n_envs
-    seed: int
     start_time: float = field(default_factory=time.time)
     end_time: float | None = None
     iterations: list[dict[str, Any]] = field(default_factory=list)
+    checkpoint_path: str | None = None  # putanja do sačuvanog checkpointa
 
     @property
     def duration_sec(self) -> float:
@@ -68,7 +68,7 @@ class TrainingRun:
 def save_run(run: TrainingRun, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     # Ime fajla enkodira sve bitne parametre — lako za parsiranje
-    name = f"{run.framework}_{run.env_id.replace('/', '_')}_w{run.num_workers}_s{run.seed}.json"
+    name = f"{run.framework}_{run.env_id.replace('/', '_')}_w{run.num_workers}.json"
     path = output_dir / name
     path.write_text(json.dumps(run.to_dict(), indent=2), encoding="utf-8")
     return path

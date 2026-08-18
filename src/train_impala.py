@@ -1,20 +1,25 @@
 """
-Distribuirano treniranje PPO agenta pomoću Ray RLlib.
+Distribuirano treniranje IMPALA agenta pomoću Ray RLlib.
 
-Šta je PPO:
-  PPO (Proximal Policy Optimization) uči agenta da bira dobre akcije.
-  Intuicija: agent proba akciju → vidi koliko je bila dobra (advantage) →
-  pomalo promeni strategiju, ali ne previše odjednom (clip = "proximal").
+Šta je IMPALA:
+  IMPALA (Importance Weighted Actor-Learner Architecture) je asinhroni
+  distribuirani RL algoritam. Za razliku od PPO koji čeka sve workere pre
+  svakog update-a (sinhron), IMPALA learner ažurira policy KONTINUALNO
+  dok workeri šalju iskustvo.
 
-Zašto Ray RLlib:
-  Ray pokreće N paralelnih EnvRunner procesa koji igraju igru istovremeno.
-  Više runnera → više iskustva u sekundi (throughput) → brže učenje.
-  Može da skalira na više mašina (GCP klaster).
+  Intuicija: workeri igraju igru i šalju trajektorije u centralni red čekanja.
+  Learner uzima iz reda i radi update bez čekanja. V-trace korekcija
+  kompenzuje zastarelost iskustva (off-policy correction).
+
+Zašto IMPALA za poređenje sa PPO:
+  PPO  — sinhron: learner čeka najsporijeg workera → idle vreme sa w=8+
+  IMPALA — asinhron: learner nikad ne čeka → bolje iskorišćenje resursa
+  Ovo poređenje je centralna eksperimentalna priča master rada.
 
 GIF-ovi koje ovaj fajl generiše (ako se zada --gif):
-  - random_agent.gif       — agent pre treninga (haos)
-  - ray_wN_trained.gif     — naučen agent sa N workera
-  - ray_wN_evolution.gif   — kako je agent napredovao tokom treninga
+  - random_agent.gif          — agent pre treninga
+  - impala_wN_trained.gif     — naučen agent sa N workera
+  - impala_wN_evolution.gif   — napredak tokom treninga
 """
 
 from __future__ import annotations
@@ -27,33 +32,10 @@ from pathlib import Path
 import numpy as np
 import gymnasium as gym
 import ray
-from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.impala import ImpalaConfig
 from ray.tune import register_env
 
 from metrics import TrainingRun, save_run
-
-
-class _ClipObsWrapper(gym.ObservationWrapper):
-    """Klipuje opservacije na granice observation_space.
-
-    BipedalWalker-v3 povremeno vraća ugao tela koji malo prelazi π (3.14159)
-    zbog numeričke nepreciznosti u Box2D fizičkom engine-u. Ray RLlib crashuje
-    workera kad detektuje opservaciju izvan prostora. Ovo je najjednostavniji fix.
-    """
-
-    def observation(self, obs):
-        return np.clip(obs, self.observation_space.low, self.observation_space.high)
-
-
-def _register_clipped_envs() -> None:
-    """Registruje klipovane verzije envova koji imaju OOB opservacije."""
-    def _make_clipped_bipedal(cfg):
-        env = gym.make("BipedalWalker-v3")
-        return _ClipObsWrapper(env)
-
-    register_env("BipedalWalker-v3-clipped", _make_clipped_bipedal)
-
-
 from play_game import (
     build_evolution_gif,
     record_episode,
@@ -63,15 +45,26 @@ from play_game import (
 
 ROOT = Path(__file__).parent.parent
 
-# Mapiranje env_id → klipovana verzija za envove sa OOB opservacijama
 _CLIPPED_ENV_MAP = {
     "BipedalWalker-v3": "BipedalWalker-v3-clipped",
     "BipedalWalkerHardcore-v3": "BipedalWalker-v3-clipped",
 }
 
 
+class _ClipObsWrapper(gym.ObservationWrapper):
+    """Klipuje opservacije na granice observation_space (fix za BipedalWalker Box2D)."""
+    def observation(self, obs):
+        return np.clip(obs, self.observation_space.low, self.observation_space.high)
+
+
+def _register_clipped_envs() -> None:
+    def _make_clipped_bipedal(cfg):
+        env = gym.make("BipedalWalker-v3")
+        return _ClipObsWrapper(env)
+    register_env("BipedalWalker-v3-clipped", _make_clipped_bipedal)
+
+
 def _resolve_env_id(env_id: str) -> str:
-    """Vraća klipovanu verziju env_id ako postoji, inače originalni."""
     return _CLIPPED_ENV_MAP.get(env_id, env_id)
 
 
@@ -80,59 +73,38 @@ def build_config(
     num_env_runners: int,
     train_batch_size: int,
     lr: float,
-    gamma: float = 0.99,
-    gae_lambda: float = 0.95,
-    ent_coef: float = 0.0,
-    clip_range: float = 0.2,
+    entropy_coeff: float = 0.01,
+    vf_loss_coeff: float = 0.5,
+    rollout_fragment_length: int = 50,
     num_gpus: float = 0,
-    minibatch_size: int | None = None,
-    num_epochs: int = 30,
-    normalize_obs: bool = False,
-) -> PPOConfig:
+) -> ImpalaConfig:
     """
-    Pravi PPO konfiguraciju za Ray RLlib.
+    Pravi IMPALA konfiguraciju za Ray RLlib.
 
-    num_env_runners = KLJUČNI PARAMETAR za master rad:
-      0 → lokalno u jednom procesu (sekvencijalno, kao baseline)
-      N → N paralelnih Ray aktora koji igraju igru istovremeno
+    num_env_runners — isti parametar kao u PPO, isti efekat paralelizacije.
+                      Razlika: IMPALA ih koristi asinhrono.
 
-    train_batch_size = ukupno koraka pre svakog ažuriranja policy-ja.
-    Sa N runner-a, svaki sakuplja ~train_batch_size/N koraka.
-    Za BipedalWalker (SB3 ref): n_steps=2048 × n_envs=32 = 65536.
+    rollout_fragment_length — koliko koraka svaki worker skupi pre slanja learner-u.
+                              Manji = learner dobija iskustvo češće (asinhronost++).
+                              Veći = manje komunikacije, ali zastalelije iskustvo.
+                              Default 50 je dobar balans za LunarLander.
 
-    minibatch_size — veličina mini-batch-a pri SGD koraku (SB3: batch_size).
-                     Ako None, RLlib koristi podrazumevanu vrednost.
-    num_epochs     — broj SGD prolaza po iteraciji (SB3: n_epochs).
-    normalize_obs  — normalizacija opservacija MeanStdFilter-om (SB3: norm_obs).
-
-    Env-specifični parametri (iz ppo_override u experiments.yaml):
-      gamma     — discount faktor: 0.999 za duge epizode (BipedalWalker)
-      gae_lambda — GAE parametar za procenu advantage
-      ent_coef  — entropy koeficijent
-      clip_range — PPO clip parametar
+    vf_loss_coeff — težina value function greške u ukupnom loss-u.
+    entropy_coeff — podstiče istraživanje (isto kao ent_coef u PPO).
     """
-    training_kwargs: dict = dict(
-        train_batch_size=train_batch_size,
-        lr=lr,
-        gamma=gamma,
-        lambda_=gae_lambda,
-        entropy_coeff=ent_coef,
-        clip_param=clip_range,
-        num_epochs=num_epochs,
-    )
-    if minibatch_size is not None:
-        training_kwargs["minibatch_size"] = minibatch_size
-
-    obs_filter = "MeanStdFilter" if normalize_obs else "NoFilter"
-
     return (
-        PPOConfig()
+        ImpalaConfig()
         .environment(_resolve_env_id(env_id), clip_actions=True)
         .env_runners(
             num_env_runners=num_env_runners,
-            observation_filter=obs_filter,
+            rollout_fragment_length=rollout_fragment_length,
         )
-        .training(**training_kwargs)
+        .training(
+            train_batch_size=train_batch_size,
+            lr=lr,
+            entropy_coeff=entropy_coeff,
+            vf_loss_coeff=vf_loss_coeff,
+        )
         .resources(num_gpus=num_gpus)
         .api_stack(
             enable_rl_module_and_learner=False,
@@ -142,11 +114,7 @@ def build_config(
 
 
 def _is_valid_checkpoint(path: Path) -> bool:
-    """
-    Proverava da li direktorijum sadrži validan RLlib checkpoint.
-    Ray prepoznaje checkpoint po prisustvu rllib_checkpoint.json
-    (noviji API) ili algorithm_state.pkl (stariji API).
-    """
+    """Proverava da li direktorijum sadrži validan RLlib checkpoint."""
     return path.is_dir() and (
         (path / "rllib_checkpoint.json").exists()
         or (path / "algorithm_state.pkl").exists()
@@ -157,25 +125,18 @@ def _save_checkpoint(algo, ckpt_path: Path) -> str | None:
     """
     Čuva RLlib checkpoint i vraća putanju kao string.
 
-    Ray RLlib menja API kroz verzije:
-      - Stari API: algo.save_checkpoint(dir) → string putanja (checkpoint podFolder)
-      - Novi API:  algo.save(dir)            → TrainingResult sa .checkpoint.path
-
-    Nakon svake metode proverava da li direktorijum zaista sadrži checkpoint
-    fajlove pre nego što vrati putanju — izbegava vraćanje pogrešnih putanja.
+    Proverava da li je putanja dobijena od API-ja zaista validan checkpoint
+    pre nego što je vrati — izbegava vraćanje pogrešnih putanja.
     """
     ckpt_path.mkdir(parents=True, exist_ok=True)
 
-    # Pokušaj noviji algo.save() API (vraća TrainingResult)
     saved_path: str | None = None
     try:
         result = algo.save(str(ckpt_path))
-        # TrainingResult.checkpoint.path
         if hasattr(result, "checkpoint") and result.checkpoint is not None:
             p = getattr(result.checkpoint, "path", None)
             if p:
                 saved_path = str(p)
-        # Direktan Checkpoint objekat
         if not saved_path:
             p = getattr(result, "path", None)
             if p:
@@ -183,11 +144,9 @@ def _save_checkpoint(algo, ckpt_path: Path) -> str | None:
     except Exception:
         pass
 
-    # Verifikuj da li putanja dobijena od API-ja zaista sadrži checkpoint
     if saved_path and _is_valid_checkpoint(Path(saved_path)):
         return saved_path
 
-    # Pokušaj stariji algo.save_checkpoint() API
     try:
         result = algo.save_checkpoint(str(ckpt_path))
         if isinstance(result, str) and _is_valid_checkpoint(Path(result)):
@@ -195,14 +154,12 @@ def _save_checkpoint(algo, ckpt_path: Path) -> str | None:
     except Exception:
         pass
 
-    # Fallback: pretraži ckpt_path i podfoldere za rllib_checkpoint.json
     if _is_valid_checkpoint(ckpt_path):
         return str(ckpt_path)
     for subdir in sorted(ckpt_path.glob("checkpoint_*"), reverse=True):
         if _is_valid_checkpoint(subdir):
             return str(subdir)
 
-    # Poslednji fallback: folder postoji i nije prazan (stariji checkpoint format)
     try:
         if any(ckpt_path.iterdir()):
             return str(ckpt_path)
@@ -224,18 +181,17 @@ def train(
     output_dir: str | None = None,
     gif_dir: str | None = None,
     evolution_every: int = 10,
-    ppo_params: dict | None = None,
+    impala_params: dict | None = None,
     checkpoint_dir: str | None = None,
 ) -> TrainingRun:
     """
-    Trenira PPO agenta sa Ray RLlib.
+    Trenira IMPALA agenta sa Ray RLlib.
 
-    ppo_params — env-specifični PPO hiperparametri (iz experiments.yaml ppo_override).
-                 Prepisuju default vrednosti. Npr. za BipedalWalker:
-                   {"gamma": 0.999, "gae_lambda": 0.95, "ent_coef": 0.001, ...}
+    impala_params — env-specifični hiperparametri (iz experiments.yaml impala_override).
+                    Podržani ključevi: lr, entropy_coeff, vf_loss_coeff,
+                                       rollout_fragment_length, train_batch_size
     checkpoint_dir — folder u koji se čuva checkpoint posle treninga.
                      Ako None, checkpoint se ne čuva.
-                     Putanja se upisuje u run.checkpoint_path.
     """
     if ray_address:
         ray.init(address=ray_address, ignore_reinit_error=True)
@@ -246,13 +202,13 @@ def train(
 
     _register_clipped_envs()
 
-    p = ppo_params or {}
+    p = impala_params or {}
     out_path = Path(output_dir) if output_dir else ROOT / "results"
     gif_path = Path(gif_dir) if gif_dir else None
     ckpt_path = Path(checkpoint_dir) if checkpoint_dir else None
 
     run = TrainingRun(
-        framework="ray_rllib",
+        framework="impala",
         env_id=env_id,
         num_workers=num_env_runners,
     )
@@ -262,39 +218,29 @@ def train(
         num_env_runners=num_env_runners,
         train_batch_size=p.get("train_batch_size", train_batch_size),
         lr=p.get("lr", lr),
-        gamma=p.get("gamma", 0.99),
-        gae_lambda=p.get("gae_lambda", 0.95),
-        ent_coef=p.get("ent_coef", 0.0),
-        clip_range=p.get("clip_range", 0.2),
+        entropy_coeff=p.get("entropy_coeff", 0.01),
+        vf_loss_coeff=p.get("vf_loss_coeff", 0.5),
+        rollout_fragment_length=p.get("rollout_fragment_length", 50),
         num_gpus=num_gpus,
-        minibatch_size=p.get("sgd_minibatch_size"),
-        num_epochs=p.get("num_sgd_iter", 30),
-        normalize_obs=p.get("normalize_obs", False),
     )
     algo = config.build_algo()
 
     print(f"\n{'='*65}")
-    print(f"  Ray RLlib PPO")
-    print(f"  Env:         {env_id}")
-    print(f"  EnvRunners:  {num_env_runners}  ← paralelni procesi")
-    print(f"  BatchSize:   {p.get('train_batch_size', train_batch_size)} koraka/iter")
-    if p.get("sgd_minibatch_size"):
-        print(f"  MiniBatch:   {p['sgd_minibatch_size']}  (SB3: batch_size)")
-    print(f"  SGD itera.:  {p.get('num_sgd_iter', 30)}  (SB3: n_epochs)")
-    print(f"  NormObs:     {p.get('normalize_obs', False)}")
-    print(f"  Cilj:        nagrada >= {target_reward}")
-    print(f"  PPO params:  lr={p.get('lr', lr)}, gamma={p.get('gamma', 0.99)}, "
-          f"ent_coef={p.get('ent_coef', 0.0)}, clip={p.get('clip_range', 0.2)}")
+    print(f"  Ray RLlib IMPALA  (asinhrono)")
+    print(f"  Env:              {env_id}")
+    print(f"  EnvRunners:       {num_env_runners}  ← asinhroni procesi")
+    print(f"  BatchSize:        {p.get('train_batch_size', train_batch_size)} koraka/iter")
+    print(f"  RolloutFragment:  {p.get('rollout_fragment_length', 50)} koraka/worker/slanje")
+    print(f"  Cilj:             nagrada >= {target_reward}")
+    print(f"  PPO params:       lr={p.get('lr', lr)}, entropy={p.get('entropy_coeff', 0.01)}")
     if gif_path:
-        print(f"  GIF-ovi:     {gif_path}")
+        print(f"  GIF-ovi:          {gif_path}")
     print(f"{'='*65}\n")
     print(f"{'Iter':>4} | {'Reward':>10} | {'Steps/s':>9} | {'Iter(s)':>8} | {'Total(s)':>9}")
     print(f"{'-'*60}")
 
-    # Snimamo frejmove tokom treninga za evolution GIF
     evolution_segments: list[tuple[str, list]] = []
 
-    # Snimimo random agenta pre treninga (prvi segment)
     if gif_path:
         print("\n  Snimam random agenta (pre treninga)...")
         r_frames, r_reward = record_episode(env_id, max_steps=250)
@@ -319,7 +265,6 @@ def train(
 
             run.add_iteration(i, reward, throughput=throughput, extra={"iter_sec": round(iter_sec, 2)})
 
-            # Stani ako su gradienti eksplodirali (NaN)
             if math.isnan(reward) or math.isinf(reward):
                 print(f"\n  [NaN] Gradienti su eksplodirali na iteraciji {i}. Stajem.")
                 break
@@ -329,7 +274,6 @@ def train(
                 f"{iter_sec:8.1f} | {run.duration_sec:9.0f}"
             )
 
-            # Snimi kratku epizodu za evolution GIF
             if gif_path and (i + 1) % evolution_every == 0:
                 frames, ep_reward = record_ray_algo(algo, env_id, max_steps=300)
                 label = f"Iter {i+1} | nagrada≈{ep_reward:.0f}"
@@ -348,7 +292,6 @@ def train(
             run.checkpoint_path = _save_checkpoint(algo, ckpt_path)
             print(f"\n  Checkpoint sačuvan: {run.checkpoint_path}")
 
-        # Generiši GIF-ove od finalnog modela
         if gif_path:
             _generate_gifs(
                 algo=algo,
@@ -374,31 +317,22 @@ def _generate_gifs(
     num_env_runners: int,
     evolution_segments: list[tuple[str, list]],
 ) -> None:
-    """
-    Generiše GIF-ove dok je Ray algo još u memoriji.
-
-    Mora da se pozove PRE algo.stop() i ray.shutdown()!
-    """
     gif_path.mkdir(parents=True, exist_ok=True)
     print(f"\n  Generiše GIF-ove → {gif_path}")
 
-    # Random agent GIF (samo jednom po env-u)
     random_gif = gif_path / "random_agent.gif"
     if not random_gif.exists():
         r_frames, r_reward = record_episode(env_id, max_steps=300)
         print(f"    Slučajan agent: nagrada={r_reward:.0f}")
         save_gif(r_frames, random_gif)
 
-    # Naučen agent (best model)
     try:
         trained_frames, t_reward = record_ray_algo(algo, env_id, max_steps=500)
-        print(f"    Naučen agent (Ray w={num_env_runners}): nagrada={t_reward:.0f}")
-        save_gif(trained_frames, gif_path / f"ray_w{num_env_runners}_trained.gif")
+        print(f"    Naučen agent (IMPALA w={num_env_runners}): nagrada={t_reward:.0f}")
+        save_gif(trained_frames, gif_path / f"impala_w{num_env_runners}_trained.gif")
     except Exception as e:
         print(f"    [UPOZORENJE] Nije mogao da snimi trained GIF: {e}")
-        print(f"    Pokušaj ručno: python src/play_game.py --env {env_id}")
 
-    # Evolution GIF
     if len(evolution_segments) >= 2:
         try:
             f_frames, f_reward = record_ray_algo(algo, env_id, max_steps=400)
@@ -407,27 +341,28 @@ def _generate_gifs(
             pass
 
         evolution_frames = build_evolution_gif(evolution_segments)
-        save_gif(evolution_frames, gif_path / f"ray_w{num_env_runners}_evolution.gif", fps=24)
+        save_gif(evolution_frames, gif_path / f"impala_w{num_env_runners}_evolution.gif", fps=24)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Ray RLlib PPO trening",
+        description="Ray RLlib IMPALA trening",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--env", default="CartPole-v1")
-    parser.add_argument("--workers", type=int, default=2, help="Broj env_runners (paralelnih procesa)")
+    parser.add_argument("--workers", type=int, default=2, help="Broj env_runners (asinhroni procesi)")
     parser.add_argument("--iterations", type=int, default=30)
     parser.add_argument("--target-reward", type=float, default=450)
     parser.add_argument("--batch-size", type=int, default=4000)
     parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--rollout-fragment", type=int, default=50,
+                        help="Koraka po workeru pre slanja learner-u")
     parser.add_argument("--gpu", type=float, default=0)
-    parser.add_argument("--ray-address", default=None, help='GCP: "ray://IP:10001"')
+    parser.add_argument("--ray-address", default=None)
     parser.add_argument("--output", default=None)
-    parser.add_argument("--gif", action="store_true", help="Generiši GIF-ove tokom/posle treninga")
-    parser.add_argument("--gif-dir", default=None, help="Folder za GIF-ove")
-    parser.add_argument("--evolution-every", type=int, default=10,
-                        help="Snimi epizodu za evolution GIF svakih N iteracija")
+    parser.add_argument("--gif", action="store_true")
+    parser.add_argument("--gif-dir", default=None)
+    parser.add_argument("--evolution-every", type=int, default=10)
     parser.add_argument("--checkpoint-dir", default=None,
                         help="Folder za čuvanje checkpointa posle treninga")
     args = parser.parse_args()
@@ -451,6 +386,7 @@ def main() -> None:
         output_dir=args.output,
         gif_dir=gif_dir,
         evolution_every=args.evolution_every,
+        impala_params={"rollout_fragment_length": args.rollout_fragment},
         checkpoint_dir=args.checkpoint_dir,
     )
 
