@@ -223,16 +223,24 @@ def _print_env_summary(env_key: str, env_id: str, results: list[dict]) -> None:
         print(f"\n  Speedup (baseline = w={baseline['num_workers']}):")
         for r in ray_runs:
             speedup = baseline["duration_sec"] / r["duration_sec"] if r["duration_sec"] > 0 else 0
-            n_ratio = r["num_workers"] / baseline["num_workers"]
-            efficiency = speedup / n_ratio if n_ratio > 0 else 0
+            base_w = baseline["num_workers"]
+            cur_w = r["num_workers"]
+            # Izbegni deljenje nulom kada je baseline w=0
+            if base_w > 0 and cur_w > 0:
+                n_ratio = cur_w / base_w
+                efficiency = speedup / n_ratio
+            else:
+                n_ratio = float("inf") if cur_w > 0 else 1.0
+                efficiency = float("nan")
             thr_speedup = (
                 r.get("avg_throughput_steps_per_sec", 1)
                 / max(baseline.get("avg_throughput_steps_per_sec", 1), 1)
             )
+            eff_str = f"{efficiency:.2f}" if efficiency == efficiency else "N/A"
             print(
                 f"    w={r['num_workers']:>2}: "
                 f"speedup={speedup:.2f}x  "
-                f"efikasnost={efficiency:.2f}  "
+                f"efikasnost={eff_str}  "
                 f"thr_speedup={thr_speedup:.2f}x"
             )
 
