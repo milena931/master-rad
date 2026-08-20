@@ -1,0 +1,140 @@
+{
+  "framework": "ray_rllib",
+  "env_id": "CartPole-v1",
+  "num_workers": 2,
+  "start_time": 1787158923.5991788,
+  "end_time": 1787159024.9515789,
+  "iterations": [
+    {
+      "iteration": 0,
+      "episode_return_mean": 22.426136363636363,
+      "throughput_steps_per_sec": 752.2,
+      "elapsed_sec": 9.21,
+      "iter_sec": 5.32
+    },
+    {
+      "iteration": 1,
+      "episode_return_mean": 35.357142857142854,
+      "throughput_steps_per_sec": 735.3,
+      "elapsed_sec": 14.65,
+      "iter_sec": 5.44
+    },
+    {
+      "iteration": 2,
+      "episode_return_mean": 56.9,
+      "throughput_steps_per_sec": 768.9,
+      "elapsed_sec": 19.85,
+      "iter_sec": 5.2
+    },
+    {
+      "iteration": 3,
+      "episode_return_mean": 87.83,
+      "throughput_steps_per_sec": 763.5,
+      "elapsed_sec": 25.09,
+      "iter_sec": 5.24
+    },
+    {
+      "iteration": 4,
+      "episode_return_mean": 120.39,
+      "throughput_steps_per_sec": 753.2,
+      "elapsed_sec": 30.4,
+      "iter_sec": 5.31
+    },
+    {
+      "iteration": 5,
+      "episode_return_mean": 151.26,
+      "throughput_steps_per_sec": 766.7,
+      "elapsed_sec": 35.62,
+      "iter_sec": 5.22
+    },
+    {
+      "iteration": 6,
+      "episode_return_mean": 181.82,
+      "throughput_steps_per_sec": 763.6,
+      "elapsed_sec": 40.86,
+      "iter_sec": 5.24
+    },
+    {
+      "iteration": 7,
+      "episode_return_mean": 212.94,
+      "throughput_steps_per_sec": 737.8,
+      "elapsed_sec": 46.28,
+      "iter_sec": 5.42
+    },
+    {
+      "iteration": 8,
+      "episode_return_mean": 245.5,
+      "throughput_steps_per_sec": 755.5,
+      "elapsed_sec": 51.58,
+      "iter_sec": 5.29
+    },
+    {
+      "iteration": 9,
+      "episode_return_mean": 283.73,
+      "throughput_steps_per_sec": 754.4,
+      "elapsed_sec": 56.88,
+      "iter_sec": 5.3
+    },
+    {
+      "iteration": 10,
+      "episode_return_mean": 315.16,
+      "throughput_steps_per_sec": 732.7,
+      "elapsed_sec": 62.34,
+      "iter_sec": 5.46
+    },
+    {
+      "iteration": 11,
+      "episode_return_mean": 341.96,
+      "throughput_steps_per_sec": 754.2,
+      "elapsed_sec": 67.64,
+      "iter_sec": 5.3
+    },
+    {
+      "iteration": 12,
+      "episode_return_mean": 370.14,
+      "throughput_steps_per_sec": 753.5,
+      "elapsed_sec": 72.95,
+      "iter_sec": 5.31
+    },
+    {
+      "iteration": 13,
+      "episode_return_mean": 396.26,
+      "throughput_steps_per_sec": 747.6,
+      "elapsed_sec": 78.3,
+      "iter_sec": 5.35
+    },
+    {
+      "iteration": 14,
+      "episode_return_mean": 412.25,
+      "throughput_steps_per_sec": 756.9,
+      "elapsed_sec": 83.59,
+      "iter_sec": 5.29
+    },
+    {
+      "iteration": 15,
+      "episode_return_mean": 428.99,
+      "throughput_steps_per_sec": 711.9,
+      "elapsed_sec": 90.48,
+      "iter_sec": 5.62
+    },
+    {
+      "iteration": 16,
+      "episode_return_mean": 444.97,
+      "throughput_steps_per_sec": 744.2,
+      "elapsed_sec": 95.85,
+      "iter_sec": 5.38
+    },
+    {
+      "iteration": 17,
+      "episode_return_mean": 459.8,
+      "throughput_steps_per_sec": 727.3,
+      "elapsed_sec": 101.35,
+      "iter_sec": 5.5
+    }
+  ],
+  "checkpoint_path": "/home/milena/Documents/etf/master/master-rad/results/checkpoints/ppo_cartpole_w2",
+  "duration_sec": 101.35240006446838,
+  "final_reward": 459.8,
+  "best_reward": 459.8,
+  "avg_throughput_steps_per_sec": 748.9
+}

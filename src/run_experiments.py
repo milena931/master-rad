@@ -22,11 +22,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# Osigurava line-buffering kada se skripta pokreće kroz pipe (npr. | tee)
+# Bez ovoga Python baferuje ispis u blokove → iteracije se ne vide u realnom vremenu
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
 
 import yaml
 
 from train_ray import train as train_ray
+from train_impala import train as train_impala
 from evaluate_agent import evaluate as evaluate_agent
 
 ROOT = Path(__file__).parent.parent
@@ -50,26 +57,31 @@ def run_all_experiments(
     generate_gifs: bool = True,
     scaling_only: bool = False,
     evaluate_episodes: int = 0,
+    algorithms: list[str] | None = None,
+    max_iterations_override: int | None = None,
 ) -> dict[str, list[dict]]:
     """
     Pokreće eksperimente za sve tražene envove.
 
-    scaling_only — ako True, za envove koji imaju scaling_max_iterations/
-                   scaling_worker_counts u config-u, koristi te vrednosti.
-                   Rezultat: kratki run koji meri throughput i speedup,
-                   bez čekanja na konvergenciju (idealno za BipedalWalker lokalno).
-    evaluate_episodes — ako > 0, posle svakog treninga sačuva checkpoint i
-                        pokrene evaluate_episodes epizoda radi mean ± std.
-                        Rezultati se dodaju u summary JSON.
+    algorithms       — lista algoritama: ["ppo"], ["impala"] ili ["ppo", "impala"].
+                       Default: ["ppo"]
+    scaling_only     — ako True, za envove koji imaju scaling_max_iterations/
+                       scaling_worker_counts u config-u, koristi te vrednosti.
+    evaluate_episodes — ako > 0, posle svakog treninga pokrene N epizoda za mean ± std.
+    max_iterations_override — ako je dato, prepisuje max_iterations iz config-a za sve envove.
+                       Korisno za brze testove: --max-iterations 30.
     """
     cfg = load_config(config_path)
     workers = worker_counts or cfg["worker_counts"]
     ppo_defaults = cfg.get("ppo_defaults", cfg.get("ppo", {}))
+    impala_defaults = cfg.get("impala_defaults", {})
+    run_algos = algorithms or ["ppo"]
     all_results: dict[str, list[dict]] = {}
 
     print(f"\n{'#'*65}")
     print(f"  MASTER RAD — {'SCALING STUDY' if scaling_only else 'SKALABILNOST EKSPERIMENTI'}")
     print(f"  Okruženja: {env_keys}")
+    print(f"  Algoritmi: {run_algos}")
     print(f"  Workers:   {workers}")
     print(f"  GIF-ovi:   {'da' if generate_gifs else 'ne'}")
     if evaluate_episodes > 0:
@@ -107,6 +119,10 @@ def run_all_experiments(
             effective_max_iter = env_cfg["max_iterations"]
             effective_workers = workers
 
+        # Ručni override (--max-iterations flag) prepisuje sve gore
+        if max_iterations_override is not None:
+            effective_max_iter = max_iterations_override
+
         # Merge: defaults + env-specifični override
         ppo_params = {**ppo_defaults, **env_cfg.get("ppo_override", {})}
 
@@ -117,66 +133,74 @@ def run_all_experiments(
 
         env_results: list[dict] = []
 
-        # --- Ray RLlib run-ovi ---
-        for n_workers in effective_workers:
-            print(f"\n>>> Ray RLlib | env_runners={n_workers} | {env_id}")
+        # ── PPO run-ovi ──────────────────────────────────────────────────────
+        if "ppo" in run_algos:
+            for n_workers in effective_workers:
+                print(f"\n>>> PPO | env_runners={n_workers} | {env_id}")
 
-            # Checkpoint se uvek čuva — potreban i za evaluaciju i za kasniju analizu
-            ckpt_dir = str(output_dir / "checkpoints" / f"ppo_{env_key}_w{n_workers}")
+                ckpt_dir = str(output_dir / "checkpoints" / f"ppo_{env_key}_w{n_workers}")
 
-            run = train_ray(
-                env_id=env_id,
-                num_env_runners=n_workers,
-                max_iterations=effective_max_iter,
-                target_reward=env_cfg["target_reward"],
-                train_batch_size=ppo_params.get("train_batch_size", cfg["ppo_defaults"].get("train_batch_size", 4000)),
-                lr=ppo_params.get("lr", 3e-4),
-                ray_address=ray_address,
-                output_dir=str(output_dir),
-                gif_dir=str(gif_dir) if gif_dir else None,
-                evolution_every=env_cfg.get("evolution_every", 10),
-                ppo_params=ppo_params,
-                checkpoint_dir=ckpt_dir,
-            )
+                run = train_ray(
+                    env_id=env_id,
+                    num_env_runners=n_workers,
+                    max_iterations=effective_max_iter,
+                    target_reward=env_cfg["target_reward"],
+                    train_batch_size=ppo_params.get("train_batch_size", ppo_defaults.get("train_batch_size", 4000)),
+                    lr=ppo_params.get("lr", 3e-4),
+                    ray_address=ray_address,
+                    output_dir=str(output_dir),
+                    gif_dir=str(gif_dir) if gif_dir else None,
+                    evolution_every=env_cfg.get("evolution_every", 10),
+                    ppo_params=ppo_params,
+                    checkpoint_dir=ckpt_dir,
+                )
 
-            run_dict = run.to_dict()
+                run_dict = run.to_dict()
+                _run_evaluation(
+                    run_dict, run, env_id, evaluate_episodes,
+                    gif_dir, algo_tag=f"ppo_w{n_workers}",
+                    ckpt_dir=ckpt_dir,
+                )
+                env_results.append(run_dict)
 
-            # Evaluacija sa više epizoda → mean ± std
-            if evaluate_episodes > 0:
-                ckpt = run.checkpoint_path
-                if ckpt and ckpt != "None":
-                    print(f"\n>>> Evaluacija ({evaluate_episodes} epizoda) | w={n_workers}")
-                    eval_gif_dir = str(gif_dir) if gif_dir else None
-                    try:
-                        eval_result = evaluate_agent(
-                            checkpoint_path=ckpt,
-                            env_id=env_id,
-                            n_episodes=evaluate_episodes,
-                            gif_dir=eval_gif_dir,
-                            gif_tag=f"ppo_w{n_workers}",
-                        )
-                        run_dict["evaluation"] = {
-                            "n_episodes": eval_result["n_episodes"],
-                            "mean_reward": eval_result["mean"],
-                            "std_reward": eval_result["std"],
-                            "min_reward": eval_result["min"],
-                            "max_reward": eval_result["max"],
-                            "gif_path": eval_result["gif_path"],
-                        }
-                        print(
-                            f"  Evaluacija w={n_workers}: "
-                            f"mean={eval_result['mean']:.2f} ± {eval_result['std']:.2f}"
-                        )
-                    except Exception as exc:
-                        print(f"  [UPOZORENJE] Evaluacija nije uspela: {exc}")
-                        print(f"  Checkpoint: {ckpt}")
-                        print(f"  Možeš pokrenuti ručno: python src/evaluate_agent.py "
-                              f"--checkpoint {ckpt} --env {env_id} --episodes {evaluate_episodes}")
-                else:
-                    print(f"  [UPOZORENJE] Checkpoint nije sačuvan — evaluacija preskočena.")
-                    print(f"  Proveri da li je {ckpt_dir} validan RLlib checkpoint.")
+        # ── IMPALA run-ovi ───────────────────────────────────────────────────
+        if "impala" in run_algos:
+            impala_params = {**impala_defaults, **env_cfg.get("impala_override", {})}
+            # IMPALA može imati poseban max_iterations (treba više od PPO zbog 1 SGD prolaza)
+            impala_max_iter = env_cfg.get("impala_max_iterations", effective_max_iter)
+            # IMPALA zahteva min. 1 worker — skip 0 ili zameni sa 1
+            impala_workers = [max(w, 1) for w in effective_workers]
+            # Ukloni duplikate (ako je [0,1,...] → [1,1,...] → [1,...])
+            seen: set[int] = set()
+            impala_workers = [w for w in impala_workers if not (w in seen or seen.add(w))]
 
-            env_results.append(run_dict)
+            for n_workers in impala_workers:
+                print(f"\n>>> IMPALA | env_runners={n_workers} | {env_id}")
+
+                ckpt_dir = str(output_dir / "checkpoints" / f"impala_{env_key}_w{n_workers}")
+
+                run = train_impala(
+                    env_id=env_id,
+                    num_env_runners=n_workers,
+                    max_iterations=impala_max_iter,
+                    target_reward=env_cfg["target_reward"],
+                    train_batch_size=impala_params.get("train_batch_size", 500),
+                    lr=impala_params.get("lr", 5e-4),
+                    ray_address=ray_address,
+                    output_dir=str(output_dir),
+                    gif_dir=str(gif_dir) if gif_dir else None,
+                    evolution_every=env_cfg.get("evolution_every", 10),
+                    impala_params=impala_params,
+                    checkpoint_dir=ckpt_dir,
+                )
+
+                run_dict = run.to_dict()
+                _run_evaluation(
+                    run_dict, run, env_id, evaluate_episodes,
+                    gif_dir, algo_tag=f"impala_w{n_workers}",
+                    ckpt_dir=ckpt_dir,
+                )
+                env_results.append(run_dict)
 
         # Sačuvaj summary za ovaj env
         summary_path = output_dir / f"summary_{env_key}.json"
@@ -192,6 +216,48 @@ def run_all_experiments(
         _print_grand_summary(all_results)
 
     return all_results
+
+
+def _run_evaluation(
+    run_dict: dict,
+    run,
+    env_id: str,
+    evaluate_episodes: int,
+    gif_dir,
+    algo_tag: str,
+    ckpt_dir: str,
+) -> None:
+    """Pokreće post-trening evaluaciju i dodaje rezultate u run_dict."""
+    if evaluate_episodes <= 0:
+        return
+    ckpt = run.checkpoint_path
+    if not ckpt or ckpt == "None":
+        print(f"  [UPOZORENJE] Checkpoint nije sačuvan — evaluacija preskočena.")
+        print(f"  Proveri da li je {ckpt_dir} validan RLlib checkpoint.")
+        return
+    n_w = run_dict.get("num_workers", "?")
+    print(f"\n>>> Evaluacija ({evaluate_episodes} epizoda) | {algo_tag}")
+    try:
+        eval_result = evaluate_agent(
+            checkpoint_path=ckpt,
+            env_id=env_id,
+            n_episodes=evaluate_episodes,
+            gif_dir=str(gif_dir) if gif_dir else None,
+            gif_tag=algo_tag,
+        )
+        run_dict["evaluation"] = {
+            "n_episodes": eval_result["n_episodes"],
+            "mean_reward": eval_result["mean"],
+            "std_reward": eval_result["std"],
+            "min_reward": eval_result["min"],
+            "max_reward": eval_result["max"],
+            "gif_path": eval_result["gif_path"],
+        }
+        print(f"  {algo_tag}: mean={eval_result['mean']:.2f} ± {eval_result['std']:.2f}")
+    except Exception as exc:
+        print(f"  [UPOZORENJE] Evaluacija nije uspela: {exc}")
+        print(f"  Možeš pokrenuti ručno: python src/evaluate_agent.py "
+              f"--checkpoint {ckpt} --env {env_id} --episodes {evaluate_episodes}")
 
 
 def _print_env_summary(env_key: str, env_id: str, results: list[dict]) -> None:
@@ -214,35 +280,41 @@ def _print_env_summary(env_key: str, env_id: str, results: list[dict]) -> None:
             line += f"  {ev['mean_reward']:>7.2f} ± {ev['std_reward']:<7.2f}"
         print(line)
 
-    ray_runs = sorted(
-        [r for r in results if r["framework"] == "ray_rllib"],
+    _print_speedup_table(results, framework="ray_rllib", label="PPO")
+    _print_speedup_table(results, framework="impala", label="IMPALA")
+
+
+def _print_speedup_table(results: list[dict], framework: str, label: str) -> None:
+    """Štampa speedup/efikasnost tabelu za jedan algoritam."""
+    runs = sorted(
+        [r for r in results if r["framework"] == framework],
         key=lambda r: r["num_workers"],
     )
-    if len(ray_runs) >= 2:
-        baseline = ray_runs[0]
-        print(f"\n  Speedup (baseline = w={baseline['num_workers']}):")
-        for r in ray_runs:
-            speedup = baseline["duration_sec"] / r["duration_sec"] if r["duration_sec"] > 0 else 0
-            base_w = baseline["num_workers"]
-            cur_w = r["num_workers"]
-            # Izbegni deljenje nulom kada je baseline w=0
-            if base_w > 0 and cur_w > 0:
-                n_ratio = cur_w / base_w
-                efficiency = speedup / n_ratio
-            else:
-                n_ratio = float("inf") if cur_w > 0 else 1.0
-                efficiency = float("nan")
-            thr_speedup = (
-                r.get("avg_throughput_steps_per_sec", 1)
-                / max(baseline.get("avg_throughput_steps_per_sec", 1), 1)
-            )
-            eff_str = f"{efficiency:.2f}" if efficiency == efficiency else "N/A"
-            print(
-                f"    w={r['num_workers']:>2}: "
-                f"speedup={speedup:.2f}x  "
-                f"efikasnost={eff_str}  "
-                f"thr_speedup={thr_speedup:.2f}x"
-            )
+    if len(runs) < 2:
+        return
+    baseline = runs[0]
+    print(f"\n  Speedup {label} (baseline = w={baseline['num_workers']}):")
+    for r in runs:
+        speedup = baseline["duration_sec"] / r["duration_sec"] if r["duration_sec"] > 0 else 0
+        base_w = baseline["num_workers"]
+        cur_w = r["num_workers"]
+        if base_w > 0 and cur_w > 0:
+            n_ratio = cur_w / base_w
+            efficiency = speedup / n_ratio
+        else:
+            n_ratio = float("inf") if cur_w > 0 else 1.0
+            efficiency = float("nan")
+        thr_speedup = (
+            r.get("avg_throughput_steps_per_sec", 1)
+            / max(baseline.get("avg_throughput_steps_per_sec", 1), 1)
+        )
+        eff_str = f"{efficiency:.2f}" if efficiency == efficiency else "N/A"
+        print(
+            f"    w={r['num_workers']:>2}: "
+            f"speedup={speedup:.2f}x  "
+            f"efikasnost={eff_str}  "
+            f"thr_speedup={thr_speedup:.2f}x"
+        )
 
 
 def _print_grand_summary(all_results: dict[str, list[dict]]) -> None:
@@ -284,6 +356,13 @@ def main() -> None:
         help="Worker counts (default iz config-a: [1, 2, 4])",
     )
     parser.add_argument("--ray-address", default=None, help='GCP: "ray://IP:10001"')
+    parser.add_argument(
+        "--algo",
+        nargs="+",
+        default=["ppo"],
+        choices=["ppo", "impala"],
+        help="Algoritmi za pokretanje (default: ppo). Primeri: --algo ppo  --algo impala  --algo ppo impala",
+    )
     parser.add_argument("--gif", action="store_true", help="Generiši GIF-ove za svaki env")
     parser.add_argument(
         "--scaling-only",
@@ -305,6 +384,13 @@ def main() -> None:
             "Primer: --evaluate 15"
         ),
     )
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Prepiši max_iterations iz config-a (korisno za brze testove).",
+    )
     args = parser.parse_args()
 
     run_all_experiments(
@@ -316,6 +402,8 @@ def main() -> None:
         generate_gifs=args.gif,
         scaling_only=args.scaling_only,
         evaluate_episodes=args.evaluate,
+        algorithms=args.algo,
+        max_iterations_override=args.max_iterations,
     )
 
 

@@ -26,8 +26,12 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
 import time
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
 
 import numpy as np
 import gymnasium as gym
@@ -77,6 +81,12 @@ def build_config(
     vf_loss_coeff: float = 0.5,
     rollout_fragment_length: int = 50,
     num_gpus: float = 0,
+    min_time_s_per_iteration: float = 0.0,
+    normalize_obs: bool = False,
+    grad_clip: float | None = 40.0,
+    num_epochs: int = 1,
+    replay_proportion: float = 0.0,
+    replay_buffer_num_slots: int = 0,
 ) -> ImpalaConfig:
     """
     Pravi IMPALA konfiguraciju za Ray RLlib.
@@ -87,30 +97,59 @@ def build_config(
     rollout_fragment_length — koliko koraka svaki worker skupi pre slanja learner-u.
                               Manji = learner dobija iskustvo češće (asinhronost++).
                               Veći = manje komunikacije, ali zastalelije iskustvo.
-                              Default 50 je dobar balans za LunarLander.
+
+    min_time_s_per_iteration — minimalno vreme čekanja po iteraciji (Ray default: 10s!).
+                               0.0 = bez čekanja, iteracije teku koliko god brzo mogu.
+                               Ovo je ključno za brze envove kao CartPole.
+
+    normalize_obs — MeanStdFilter normalizacija opservacija (kao normalize_obs u PPO).
+                    KRITIČNO za BipedalWalker — policy prima opservacije različitih
+                    opsega i bez normalizacije ne može da nauči.
 
     vf_loss_coeff — težina value function greške u ukupnom loss-u.
     entropy_coeff — podstiče istraživanje (isto kao ent_coef u PPO).
+    grad_clip     — maksimalna norma gradijenata (originalni IMPALA paper: 40).
+                    Sprečava catastrophic forgetting zbog prevelikih update-a.
+                    None = bez klipovanja (nije preporučeno za IMPALA).
+    num_epochs    — ostaviti na 1 (default). Više epoha ne poboljšava efikasnost jer:
+                    - Manji lr + više epoha = isti efektivni update kao originalni lr
+                    - Veći lr + više epoha = divergencija (V-trace IS weights postaju netačni)
+                    Ovo je fundamentalna arhitekturalna razlika od PPO.
+    replay_proportion — odnos replay:novi podaci (0 = bez replay-a).
+                    Izbjegavati: cold-start problem puni buffer lošim podacima.
+    replay_buffer_num_slots — koliko batcha čuvamo u replay memoriji.
     """
-    return (
+    obs_filter = "MeanStdFilter" if normalize_obs else "NoFilter"
+    training_kwargs: dict = dict(
+        train_batch_size=train_batch_size,
+        lr=lr,
+        entropy_coeff=entropy_coeff,
+        vf_loss_coeff=vf_loss_coeff,
+        num_epochs=num_epochs,
+    )
+    if grad_clip is not None:
+        training_kwargs["grad_clip"] = grad_clip
+    if replay_proportion > 0.0:
+        training_kwargs["replay_proportion"] = replay_proportion
+        training_kwargs["replay_buffer_num_slots"] = max(replay_buffer_num_slots, 1)
+    cfg = (
         ImpalaConfig()
         .environment(_resolve_env_id(env_id), clip_actions=True)
         .env_runners(
             num_env_runners=num_env_runners,
             rollout_fragment_length=rollout_fragment_length,
+            observation_filter=obs_filter,
         )
-        .training(
-            train_batch_size=train_batch_size,
-            lr=lr,
-            entropy_coeff=entropy_coeff,
-            vf_loss_coeff=vf_loss_coeff,
-        )
+        .training(**training_kwargs)
         .resources(num_gpus=num_gpus)
         .api_stack(
             enable_rl_module_and_learner=False,
             enable_env_runner_and_connector_v2=False,
         )
     )
+    # min_time_s_per_iteration je atribut baznog AlgorithmConfig, ne .training() arg
+    cfg.min_time_s_per_iteration = min_time_s_per_iteration
+    return cfg
 
 
 def _is_valid_checkpoint(path: Path) -> bool:
@@ -193,6 +232,11 @@ def train(
     checkpoint_dir — folder u koji se čuva checkpoint posle treninga.
                      Ako None, checkpoint se ne čuva.
     """
+    # IMPALA je asinhroni algoritam — zahteva bar jednog actor workera
+    if num_env_runners < 1:
+        print(f"  [INFO] IMPALA zahteva num_env_runners >= 1. Postavljam na 1 (bilo: {num_env_runners}).")
+        num_env_runners = 1
+
     if ray_address:
         ray.init(address=ray_address, ignore_reinit_error=True)
         print(f"Spojen na Ray klaster: {ray_address}")
@@ -222,6 +266,12 @@ def train(
         vf_loss_coeff=p.get("vf_loss_coeff", 0.5),
         rollout_fragment_length=p.get("rollout_fragment_length", 50),
         num_gpus=num_gpus,
+        min_time_s_per_iteration=p.get("min_time_s_per_iteration", 0.0),
+        normalize_obs=p.get("normalize_obs", False),
+        grad_clip=p.get("grad_clip", 40.0),
+        num_epochs=p.get("num_epochs", 1),
+        replay_proportion=p.get("replay_proportion", 0.0),
+        replay_buffer_num_slots=p.get("replay_buffer_num_slots", 0),
     )
     algo = config.build_algo()
 
@@ -232,7 +282,13 @@ def train(
     print(f"  BatchSize:        {p.get('train_batch_size', train_batch_size)} koraka/iter")
     print(f"  RolloutFragment:  {p.get('rollout_fragment_length', 50)} koraka/worker/slanje")
     print(f"  Cilj:             nagrada >= {target_reward}")
-    print(f"  PPO params:       lr={p.get('lr', lr)}, entropy={p.get('entropy_coeff', 0.01)}")
+    print(f"  NormObs:          {p.get('normalize_obs', False)}")
+    print(f"  lr:               {p.get('lr', lr)}")
+    print(f"  num_epochs:       {p.get('num_epochs', 1)}  ← SGD prolaza po batchu")
+    print(f"  entropy_coeff:    {p.get('entropy_coeff', 0.01)}")
+    print(f"  grad_clip:        {p.get('grad_clip', 40.0)}")
+    print(f"  replay_proportion:{p.get('replay_proportion', 0.0)}")
+    print(f"  min_time/iter:    {p.get('min_time_s_per_iteration', 0.0)}s")
     if gif_path:
         print(f"  GIF-ovi:          {gif_path}")
     print(f"{'='*65}\n")
