@@ -250,7 +250,7 @@ def record_ray_algo(
 
     algo_id = id(algo)
     first_time = algo_id not in _filter_debugged
-    obs_filter = _get_obs_filter(algo, _debug=first_time)
+    obs_filter = _get_obs_filter(algo, _debug=False)
     if obs_filter is None:
         if first_time:
             _filter_debugged.add(algo_id)

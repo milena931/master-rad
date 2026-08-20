@@ -1,11 +1,13 @@
 # Konfiguracija eksperimenata za master rad PoC
 #
-# PPO hiperparametri su podeljeni u dva nivoa:
-#   ppo_defaults  — zajednički za sve envove ako env nema ppo_override
-#   ppo_override  — specifični parametri za ovaj env (prepisuju defaults)
+# Hiperparametri su podeljeni u dva nivoa:
+#   ppo_defaults / appo_defaults  — zajednički za sve envove
+#   ppo_override / appo_override  — specifični za env (prepisuju defaults)
 #
-# Izvor dobrih parametara: rl-baselines3-zoo
-#   https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml
+# Referentni modeli (SB3 RL Zoo / HuggingFace):
+#   PPO: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml
+#   A2C: https://huggingface.co/sb3/a2c-LunarLander-v3
+#        https://huggingface.co/sb3/a2c-BipedalWalker-v3
 
 environments:
 
@@ -16,14 +18,36 @@ environments:
     checkpoint_every: 25_000
     evolution_every: 15
     description: "Balansiranje štapa — brzo, bez GPU"
-    # CartPole je lak — default parametri su dovoljni, nema ppo_override
-    # IMPALA: min_time=0 uklanja Ray-ov 10s timeout
-    # train_batch_size=2000: dovoljno za stabilne gradijenate (~90 epizoda po batu)
-    # Sa 1 workerom @ ~1000 koraka/s → iteracija svakih ~2s
-    impala_override:
-      train_batch_size: 2000
+    # APPO CartPole: jednostavan env, default parametri su dovoljni
+    appo_max_iterations: 80
+    appo_evolution_every: 15
+    appo_override:
+      lr: 0.0003
+      entropy_coeff: 0.01
+      gamma: 0.99
       rollout_fragment_length: 50
-      min_time_s_per_iteration: 0
+      train_batch_size: 2000
+      min_sample_timesteps_per_iteration: 2000
+    # DQN CartPole — diskretne akcije, off-policy
+    # RLlib sakuplja ~1000 koraka po algo.train() (min_sample_timesteps_per_iteration)
+    # 25 iter × 1000 = 25k koraka
+    dqn_max_iterations: 25
+    dqn_evolution_every: 8
+    dqn_override:
+      lr: 0.001
+      gamma: 0.99
+      batch_size: 64
+      buffer_size: 10_000
+      learning_starts: 1_000
+      # Istraži 10% od 25k = 2500 koraka
+      exploration_timesteps: 2_500
+      initial_eps: 1.0
+      final_eps: 0.04
+      target_update_interval: 100
+      train_freq: 4
+      min_sample_timesteps_per_iteration: 1000
+      net_arch: [256, 256]
+      print_every: 5
 
   lunarlander:
     id: LunarLander-v3
@@ -31,9 +55,9 @@ environments:
     # PPO: 1M koraka / 16384 batch = ~61 iteracija (SB3 referenca: 233 ± 54 nagrada)
     # https://huggingface.co/sb3/ppo-LunarLander-v2
     max_iterations: 65
-    # IMPALA: isti broj gradient updates kao PPO (65 × 4 epohe = 260)
-    # ali koristi manji batch (4000) → 260 × 4000 = 1.04M env koraka ≈ isti kao PPO
-    impala_max_iterations: 260
+    # APPO: isti budžet i batch kao PPO (65 × 16384 ≈ 1M).
+    appo_max_iterations: 65
+    appo_evolution_every: 15
     checkpoint_every: 200_000
     evolution_every: 15
     description: "Sletanje rakete — srednja zahtevnost, bez GPU"
@@ -50,32 +74,61 @@ environments:
       train_batch_size: 16_384
       sgd_minibatch_size: 64
       num_sgd_iter: 4
-    # IMPALA sa 4 workera: isti broj env koraka kao PPO (1M), ali 4× više iteracija
-    #   PPO:   65 iter × 16384 koraka × 4 epohe  = 65 iter, ~1M ukupnih koraka, 260 grad updates
-    #   IMPALA: 260 iter × 4000 koraka × 1 epoha = 260 iter, ~1M ukupnih koraka, 260 grad updates
-    #   → isti broj gradient updates, isti broj env koraka = pošteno poređenje!
-    #   train_batch_size=4000 → brže iteracije (0.7s vs 2.5s), više iteracija
-    #   rollout_fragment_length=200 → 5 fragmenata po workeru po batchu → svež V-trace signal
-    #   min_time=0 → prirodno: 4w × 200 steps × ~800sps = 1s/iter
-    #   grad_clip=40 sprečava catastrophic forgetting
-    impala_override:
+    appo_override:
+      # V-trace je obavezan (Ray 2.56). Više SGD epoha + async → politika
+      # eksplodira (lander odleti, obs van Box). Zato 1 epoha, ne 4 kao PPO.
       lr: 0.0003
-      entropy_coeff: 0.003
-      train_batch_size: 4000
+      entropy_coeff: 0.01
+      gamma: 0.999
+      gae_lambda: 0.98
+      clip_param: 0.2
+      num_sgd_iter: 1
       rollout_fragment_length: 200
-      min_time_s_per_iteration: 0
+      train_batch_size: 16_384
+      min_sample_timesteps_per_iteration: 16384
+      vtrace: true
+      use_circular_buffer: false
       grad_clip: 40
+    # DQN LunarLander — diskretne akcije, off-policy
+    # SB3 referenca: sb3/dqn-LunarLander-v2 (nagrada 136.79 ± 42.72 za 100k koraka)
+    # https://huggingface.co/sb3/dqn-LunarLander-v2
+    # RLlib sakuplja ~1000 koraka po algo.train() (ne 4w×4=16).
+    # 100 iter × 1000 = 100k ≈ SB3. Print svakih 5 iter (~20–40s).
+    dqn_max_iterations: 100
+    dqn_evolution_every: 25
+    dqn_override:
+      # lr=0.00063 (SB3: learning_rate)
+      lr: 0.00063
+      gamma: 0.99
+      batch_size: 128
+      buffer_size: 50_000
+      learning_starts: 0
+      # exploration_fraction=0.12 × 100k = 12k koraka (SB3: exploration_fraction)
+      exploration_timesteps: 12_000
+      initial_eps: 1.0
+      # exploration_final_eps=0.1 (SB3)
+      final_eps: 0.1
+      # target_update_interval=250 (SB3)
+      target_update_interval: 250
+      # train_freq=4 (SB3) — dužina fragmenta po workeru; iteracija i dalje čeka min_sample
+      train_freq: 4
+      min_sample_timesteps_per_iteration: 1000
+      # SB3: policy_kwargs=dict(net_arch=[256, 256])
+      net_arch: [256, 256]
+      print_every: 5
 
   bipedalwalker:
     id: BipedalWalker-v3
-    target_reward: 300 #stoji da ovo treba da bi bilo reseno
-    # --- Puno treniranje lokalno (w=8, ~1.5-2h) ---
-    # 76 × 65536 ≈ 5M koraka, koliko i SB3 referentni model
+    target_reward: 300
+    # --- Puno treniranje lokalno (w=4, ~30-60 min) ---
     max_iterations_local: 80
     # --- Puno treniranje na GCP (w=8, ~30 min) ---
     max_iterations: 80           # 80 × 65536 ≈ 5.2M koraka
+    # APPO: isti env-budžet kao PPO (80 × 65536 ≈ 5.2M). Učenje je APPO, ne PPO.
+    appo_max_iterations: 80
+    appo_evolution_every: 15
     checkpoint_every: 500_000
-    evolution_every: 15          # 15×65536 ≈ 1M koraka po snapshot-u
+    evolution_every: 15          # za PPO: 15×65536 ≈ 1M koraka po snapshot-u
     # --- Scaling study (kratko, samo throughput/speedup, lokalno ili GCP) ---
     scaling_max_iterations: 80
     scaling_worker_counts: [1, 2, 4, 8]
@@ -89,29 +142,47 @@ environments:
       gae_lambda: 0.95
       ent_coef: 0.0
       clip_range: 0.18
-      # n_steps=2048 × n_envs=32 → ukupni batch po iteraciji
       train_batch_size: 65_536
-      # SGD minibatch (SB3: batch_size=64)
       sgd_minibatch_size: 4096
-      # Broj SGD prolaza po iteraciji (SB3: n_epochs=10)
       num_sgd_iter: 10
-      # Normalizacija opservacija (SB3: normalize=True, norm_obs=True)
       normalize_obs: true
-    # IMPALA BipedalWalker: isti princip kao LunarLander (1 SGD prolaz, stabilan config)
-    #   train_batch_size=16384 → 4w × ~200 sps = ~20s prikupljanja po iteraciji
-    #   rollout_fragment_length=300 → balans između asinhronosti i credit assignment
-    #   min_time=10s → sigurno punjenje batcha sa sporijim BipedalWalker env-om
-    #   normalize_obs=true → KRITIČNO (opservacije u [-3, 3], bez norm. NaN u gradijentima)
-    #   grad_clip=40 → stabilan BipedalWalker trening
-    impala_override:
-      lr: 0.0003
-      entropy_coeff: 0.003
-      vf_loss_coeff: 0.5
+    appo_override:
+      # Isti env-budžet kao PPO (80 × 65536), ali APPO hiperparametri.
+      # clip 0.18 (PPO) na async podacima seče gradijent na 0 — zato plato −112.
+      # clip 0.4 / lr 5e-4 / gamma 0.99 su RLlib APPO defaulti za kontinualne akcije.
+      lr: 0.0005
+      entropy_coeff: 0.01
+      gae_lambda: 1.0
+      gamma: 0.99
+      clip_param: 0.4
+      num_sgd_iter: 1
+      rollout_fragment_length: 400
       train_batch_size: 16_384
-      rollout_fragment_length: 300
+      min_sample_timesteps_per_iteration: 65536
+      vtrace: true
+      use_circular_buffer: false
       normalize_obs: true
-      min_time_s_per_iteration: 10
       grad_clip: 40
+    # SAC BipedalWalker — SB3 hiperparametri gde Ray dozvoljava.
+    # Bez gSDE, log_std_init=-3 gasi exploraciju (std≈0.05) → zauvek -95.
+    # MeanStdFilter je potreban RLlib-u (SB3 normalize=False radi zbog SDE).
+    # 500 iter × 1024 koraka = 512k. 64 SGD / 1024 koraka: ~45 min, uči.
+    sac_max_iterations: 500
+    sac_evolution_every: 100
+    sac_override:
+      lr: 0.00073
+      gamma: 0.98
+      tau: 0.02
+      train_batch_size: 256
+      rollout_fragment_length: 64
+      min_sample_timesteps_per_iteration: 1024
+      buffer_size: 300_000
+      learning_starts: 10_000
+      gradient_steps: 64
+      target_update_freq: 1
+      net_arch: [400, 300]
+      normalize_obs: true
+      print_every: 1
 
 # Skalabilnost: koliko paralelnih workera/env-ova testiramo
 worker_counts: [1, 2, 4]
@@ -125,17 +196,45 @@ ppo_defaults:
   clip_range: 0.2
   train_batch_size: 4000
 
-# IMPALA default vrednosti — koriste se ako env nema impala_override
+# APPO default vrednosti (koriste se ako env nema appo_override)
+# Napomena: kod koristi ime "appo_override"/"appo_defaults" ali interno pokreće APPO.
+# A2C nije dostupan u Ray 2.56 — APPO je najbliži stabilan asinhroni algoritam.
 #
-# Ključne razlike od PPO:
-#   rollout_fragment_length — koraka koje svaki worker skupi pre slanja learner-u
-#                             Manji → asinhronost++, ali više komunikacije
-#   entropy_coeff           — istraživanje (kod PPO: ent_coef)
-#   vf_loss_coeff           — težina value loss-a u ukupnom gubitku
-#   Nema: gae_lambda, clip_range, num_sgd_iter (IMPALA koristi V-trace)
-impala_defaults:
-  lr: 0.0005
+# Ključne razlike APPO vs PPO:
+#   Isti: lr, gamma, gae_lambda, clip_param, entropy_coeff (isti objektiv!)
+#   Različito: APPO radnici rade ASINHRONO — ne čekaju jedni druge
+#   num_sgd_iter=1 preporučeno za async (više prolaza → veća staleness greška)
+#   rollout_fragment_length — manji = svežiji podaci, manji = više komunikacije
+appo_defaults:
+  lr: 0.0003
   entropy_coeff: 0.01
   vf_loss_coeff: 0.5
-  rollout_fragment_length: 50
-  train_batch_size: 500
+  gae_lambda: 0.95
+  gamma: 0.99
+  clip_param: 0.2
+  num_sgd_iter: 1
+  rollout_fragment_length: 100
+  train_batch_size: 2000
+  grad_clip: 40
+  vtrace: true
+  use_circular_buffer: false
+
+# DQN default vrednosti — diskretne akcije, off-policy
+# Aktivan samo za envove koji imaju dqn_override (CartPole, LunarLander).
+# BipedalWalker ima kontinualne akcije → DQN ne važi, koristiti SAC.
+dqn_defaults:
+  lr: 0.001
+  gamma: 0.99
+  batch_size: 128
+  buffer_size: 50_000
+  learning_starts: 1_000
+  exploration_timesteps: 10_000
+  initial_eps: 1.0
+  final_eps: 0.05
+  target_update_interval: 250
+  train_freq: 4
+  net_arch: [256, 256]
+  double_q: true
+  dueling: false
+  print_every: 5
+  min_sample_timesteps_per_iteration: 1000

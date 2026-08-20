@@ -23,15 +23,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 import gymnasium as gym
 import ray
 from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.policy.policy import Policy
 from ray.tune import register_env
 
-from play_game import record_ray_algo, save_gif
+from play_game import save_gif
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(line_buffering=True)
 
 
 def _register_custom_envs() -> None:
@@ -54,6 +59,64 @@ def _register_custom_envs() -> None:
 ROOT = Path(__file__).parent.parent
 
 
+def _find_policy_dir(ckpt: Path) -> Path | None:
+    """Traži default_policy direktorijum unutar checkpointa."""
+    candidates = [
+        ckpt / "policies" / "default_policy",
+    ]
+    for subdir in sorted(ckpt.glob("checkpoint_*"), reverse=True):
+        candidates.append(subdir / "policies" / "default_policy")
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
+def _run_episodes_with_policy(
+    policy: Policy,
+    env_id: str,
+    n_episodes: int,
+    max_steps: int,
+) -> tuple[list[float], list]:
+    """
+    Pokreće epizode koristeći samo Policy objekat — bez Ray workera.
+
+    Mnogo lakše od učitavanja punog Algorithm-a:
+    nema remote workera, nema Ray aktorskih procesa, mala potrošnja memorije.
+    """
+    rewards: list[float] = []
+    best_frames: list = []
+    best_reward = float("-inf")
+
+    env = gym.make(env_id, render_mode="rgb_array")
+
+    for ep in range(n_episodes):
+        obs, _ = env.reset()
+        ep_reward = 0.0
+        frames: list = []
+
+        for _ in range(max_steps):
+            frame = env.render()
+            if frame is not None:
+                frames.append(frame)
+
+            action = policy.compute_single_action(obs, explore=False)[0]
+            obs, reward, terminated, truncated, _ = env.step(action)
+            ep_reward += reward
+            if terminated or truncated:
+                break
+
+        rewards.append(ep_reward)
+        if ep_reward > best_reward:
+            best_reward = ep_reward
+            best_frames = frames
+
+        print(f"{ep+1:8d} | {ep_reward:10.2f}")
+
+    env.close()
+    return rewards, best_frames
+
+
 def evaluate(
     checkpoint_path: str,
     env_id: str,
@@ -65,48 +128,41 @@ def evaluate(
     """
     Učitava checkpoint i pokreće n_episodes epizoda.
 
+    Koristi Policy.from_checkpoint (bez Ray workera) da izbegne OOM
+    koji se javlja kada se puni Algorithm.from_checkpoint pokreće odmah
+    posle treninga dok mašina još nije oslobodila memoriju.
+
     Vraća dict sa:
       rewards        — lista nagrada po epizodi
       mean           — prosek
       std            — standardna devijacija
       best_reward    — nagrada najboje epizode
       gif_path       — putanja do GIF-a (ako gif_dir nije None)
-
-    gif_tag — prefiks za ime GIF fajla (npr. "ppo_w4" → "ppo_w4_best.gif")
     """
-    ray.init(ignore_reinit_error=True)
-
-    # Mora pre from_checkpoint() — checkpoint može da zahteva custom env
-    _register_custom_envs()
+    ckpt = Path(checkpoint_path)
+    if not ckpt.is_absolute():
+        ckpt = (ROOT / ckpt).resolve()
 
     print(f"\n{'='*60}")
-    print(f"  Evaluacija agenta")
-    print(f"  Checkpoint:  {checkpoint_path}")
+    print(f"  Evaluacija agenta (Policy inference, bez Ray workera)")
+    print(f"  Checkpoint:  {ckpt}")
     print(f"  Env:         {env_id}")
     print(f"  Epizode:     {n_episodes}")
     print(f"{'='*60}\n")
 
-    ckpt = Path(checkpoint_path)
-    if not ckpt.is_absolute():
-        ckpt = (ROOT / ckpt).resolve()
-    algo = Algorithm.from_checkpoint(str(ckpt))
-
-    rewards: list[float] = []
-    best_frames: list = []
-    best_reward = float("-inf")
-
     print(f"{'Epizoda':>8} | {'Nagrada':>10}")
     print(f"{'-'*22}")
 
-    for ep in range(n_episodes):
-        frames, reward = record_ray_algo(algo, env_id, max_steps=max_steps)
-        rewards.append(reward)
+    policy_dir = _find_policy_dir(ckpt)
+    if policy_dir is None:
+        raise FileNotFoundError(
+            f"Nije pronađen policies/default_policy unutar {ckpt}. "
+            "Provjeri da je checkpoint ispravan."
+        )
 
-        if reward > best_reward:
-            best_reward = reward
-            best_frames = frames
-
-        print(f"{ep+1:8d} | {reward:10.2f}")
+    _register_custom_envs()
+    policy = Policy.from_checkpoint(str(policy_dir))
+    rewards, best_frames = _run_episodes_with_policy(policy, env_id, n_episodes, max_steps)
 
     mean_r = float(np.mean(rewards))
     std_r = float(np.std(rewards))
@@ -124,13 +180,10 @@ def evaluate(
         out_file = gif_path / f"{gif_tag}_best.gif"
         save_gif(best_frames, out_file)
         gif_out = str(out_file)
-        print(f"  Best epizoda ({best_reward:.0f}) sačuvana: {out_file}")
-
-    algo.stop()
-    ray.shutdown()
+        print(f"  Best epizoda ({max(rewards):.0f}) sačuvana: {out_file}")
 
     result = {
-        "checkpoint": checkpoint_path,
+        "checkpoint": str(ckpt),
         "env_id": env_id,
         "n_episodes": n_episodes,
         "rewards": rewards,
@@ -138,7 +191,7 @@ def evaluate(
         "std": round(std_r, 3),
         "min": round(min(rewards), 3),
         "max": round(max(rewards), 3),
-        "best_reward": round(best_reward, 3),
+        "best_reward": round(max(rewards), 3),
         "gif_path": gif_out,
     }
     return result
