@@ -6,9 +6,9 @@
 #   chmod +x setup_vm.sh && ./setup_vm.sh
 #
 # Preporučena VM konfiguracija (unutar $300 studentskog kredita):
-#   Machine type: e2-standard-8  (8 vCPU, 32 GB RAM) ~ $0.27/h
-#   ili za GPU:   n1-standard-4 + 1x T4 GPU          ~ $0.35/h
-#   Region: us-central1 (jeftinije)
+#   CartPole/LunarLander: e2-standard-16 (16 vCPU, 64 GB) ~$0.54/h
+#   BipedalWalker head:   e2-standard-8  (8 vCPU, 32 GB)  ~$0.27/h
+#   Region: us-central1
 #   OS: Ubuntu 22.04 LTS
 #
 # Procena troškova za eksperimente:

@@ -1,13 +1,28 @@
-# Konfiguracija eksperimenata za master rad PoC
+# Jedina definicija eksperimenata — isto lokalno i na GCP.
+# GCP yaml-ovi (gcp/ray_cluster_*.yaml) opisuju mašine, ne hiperparametre.
 #
 # Hiperparametri su podeljeni u dva nivoa:
-#   ppo_defaults / appo_defaults  — zajednički za sve envove
-#   ppo_override / appo_override  — specifični za env (prepisuju defaults)
+#   ppo_defaults / appo_defaults / dqn_defaults  — zajednički za sve envove
+#   ppo_override / appo_override / dqn_override / sac_override — specifični za env
 #
 # Referentni modeli (SB3 RL Zoo / HuggingFace):
 #   PPO: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml
 #   A2C: https://huggingface.co/sb3/a2c-LunarLander-v3
 #        https://huggingface.co/sb3/a2c-BipedalWalker-v3
+#
+# GCP mašine (project: master-rad-501412, zona: us-central1-a):
+#   CartPole + LunarLander — gcp/ray_cluster_lunarlander.yaml
+#     1× e2-standard-16 (16 vCPU, 64 GB)  ~$0.54/h
+#     python src/run_experiments.py --envs cartpole lunarlander \
+#         --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+#   BipedalWalker — gcp/ray_cluster_bipedalwalker.yaml
+#     head:  1× e2-standard-8 (8 vCPU, 32 GB)              ~$0.27/h
+#     workers: e2-standard-8 preemptible, autoscale 0–8    ~$0.08/h po VM
+#     python src/run_experiments.py --envs bipedalwalker \
+#         --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+#   Opšti multi-node (retko) — gcp/ray_cluster.yaml
+#     head: e2-standard-4 (4 vCPU, 16 GB)
+#     workers: e2-standard-8 preemptible
 
 environments:
 
@@ -123,10 +138,8 @@ environments:
   bipedalwalker:
     id: BipedalWalker-v3
     target_reward: 300
-    # --- Puno treniranje lokalno (w=4, ~30-60 min) ---
-    max_iterations_local: 80
-    # --- Puno treniranje na GCP (w=8, ~30 min) ---
-    max_iterations: 80           # 80 × 65536 ≈ 5.2M koraka
+    # Isti budžet lokalno i na GCP: 80 × 65536 ≈ 5.2M koraka.
+    max_iterations: 80
     # APPO: isti env-budžet kao PPO (80 × 65536 ≈ 5.2M). Učenje je APPO, ne PPO.
     appo_max_iterations: 80
     appo_evolution_every: 15
@@ -187,7 +200,7 @@ environments:
       normalize_obs: true
       print_every: 1
 
-# Skalabilnost: koliko paralelnih workera/env-ova testiramo
+# Skalabilnost lokalno (laptop). Na GCP: --workers 1 2 4 8.
 worker_counts: [1, 2, 4]
 
 # PPO default vrednosti — koriste se ako env nema ppo_override

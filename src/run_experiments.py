@@ -14,8 +14,9 @@ Pokretanje:
   # Samo CartPole sa GIF-ovima:
   python run_experiments.py --envs cartpole --gif
 
-  # Na GCP klasteru:
-  python run_experiments.py --envs lunarlander --ray-address ray://34.90.x.x:10001
+  # Na GCP (ista config/experiments.yaml):
+  python src/run_experiments.py --envs lunarlander --algo ppo appo dqn \
+      --workers 1 2 4 8 --gif --evaluate 10
 """
 
 from __future__ import annotations

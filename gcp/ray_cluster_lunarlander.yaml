@@ -14,7 +14,8 @@
 #   ray up gcp/ray_cluster_lunarlander.yaml
 #   ray attach gcp/ray_cluster_lunarlander.yaml
 #   # Na VM:
-#   python run_experiments.py --envs lunarlander --workers 1 2 4 8 --gif
+#   python src/run_experiments.py --envs cartpole lunarlander \
+#       --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
 #   ray down gcp/ray_cluster_lunarlander.yaml
 #
 # Cena: e2-standard-16 = ~$0.54/h → za ~2h = ~$1.08

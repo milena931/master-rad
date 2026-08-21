@@ -20,8 +20,8 @@
 #   ray up gcp/ray_cluster_bipedalwalker.yaml
 #   ray attach gcp/ray_cluster_bipedalwalker.yaml
 #   # Na VM:
-#   python run_experiments.py --envs bipedalwalker --workers 1 2 4 8 16 --gif \
-#       --config ../config/experiments_gcp.yaml
+#   python src/run_experiments.py --envs bipedalwalker \
+#       --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
 #   ray down gcp/ray_cluster_bipedalwalker.yaml
 #
 # Cena (procena za w=16, ~4h):

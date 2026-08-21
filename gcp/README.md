@@ -1,17 +1,44 @@
 # Google Cloud Platform — Vodič za master rad
 
-## Studentski kredit
+Google Cloud studentski kredit: **$300** za nove naloge (90 dana). Za ove eksperimente treba manje od **$30**.
 
-Google Cloud daje **$300 besplatnih kredita** za nove naloge (90 dana).
-
-Registracija: https://cloud.google.com/free  
-(treba ti kredit kartica ali se ne naplaćuje dok si u free trial-u)
-
-Za master rad PoC ti treba manje od **$30** od tih $300.
+Hiperparametri: samo `config/experiments.yaml` (isto kao lokalno).
+Klaster yaml-ovi ispod podižu mašine, ne menjaju trening.
 
 ---
 
-## Opcija A — Jedna VM (preporučeno, najjednostavnije)
+## Mašine koje koristiš
+
+Project: `master-rad-501412`, zona: `us-central1-a`.
+
+| Eksperiment | Fajl | VM | Tip | vCPU / RAM | Cena/h |
+|---|---|---|---|---|---|
+| CartPole, LunarLander | `ray_cluster_lunarlander.yaml` | 1× head | **e2-standard-16** | 16 / 64 GB | ~$0.54 |
+| BipedalWalker | `ray_cluster_bipedalwalker.yaml` | head | **e2-standard-8** | 8 / 32 GB | ~$0.27 |
+| BipedalWalker | isto | 0–8 workers, preemptible | **e2-standard-8** | 8 / 32 GB | ~$0.08 / VM |
+
+CartPole/LunarLander su na **jednoj** VM jer je env korak brz — mreža između VM-ova usporava.
+BipedalWalker je na **više** VM-ova jer je fizika spora, pa se distribuiranje isplati.
+
+```bash
+# CartPole + LunarLander
+ray up gcp/ray_cluster_lunarlander.yaml
+ray attach gcp/ray_cluster_lunarlander.yaml
+python src/run_experiments.py --envs cartpole lunarlander \
+    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+ray down gcp/ray_cluster_lunarlander.yaml
+
+# BipedalWalker
+ray up gcp/ray_cluster_bipedalwalker.yaml
+ray attach gcp/ray_cluster_bipedalwalker.yaml
+python src/run_experiments.py --envs bipedalwalker \
+    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+ray down gcp/ray_cluster_bipedalwalker.yaml
+```
+
+---
+
+## Opcija A — Jedna VM ručno (alternativa, bez Ray autoscalera)
 
 ### Korak 1 — Napravi VM na GCP
 
@@ -20,9 +47,9 @@ Za master rad PoC ti treba manje od **$30** od tih $300.
 curl https://sdk.cloud.google.com | bash
 gcloud init
 
-# Napravi VM (8 jezgara, 32 GB RAM, Ubuntu 22.04)
+# Napravi VM (16 jezgara, 64 GB RAM — isto kao ray_cluster_lunarlander.yaml)
 gcloud compute instances create master-rad-vm \
-  --machine-type=e2-standard-8 \
+  --machine-type=e2-standard-16 \
   --image-family=ubuntu-2204-lts \
   --image-project=ubuntu-os-cloud \
   --boot-disk-size=60GB \
@@ -32,7 +59,7 @@ gcloud compute instances create master-rad-vm \
 gcloud compute ssh master-rad-vm --zone=us-central1-a
 ```
 
-**Cena:** e2-standard-8 = **~$0.27/h** → za 4h eksperimenata ≈ $1.08
+**Cena:** e2-standard-16 = **~$0.54/h** → za 2h eksperimenata ≈ $1.08
 
 ### Korak 2 — Setup na VM
 
@@ -62,13 +89,13 @@ gcloud compute scp --recurse /home/milena/Documents/etf/master/rad \
 ```bash
 # Na VM:
 source ~/ray-env/bin/activate
-cd ~/master-rad/src
+cd ~/master-rad
 
-# Lokalni Ray klaster (koristi svih 8 jezgara)
-ray start --head --num-cpus=8
+# Lokalni Ray klaster (sva jezgra na ovoj VM)
+ray start --head --num-cpus=16
 
-# LunarLander skalabilnost: 1, 2, 4, 8 workera
-python run_experiments.py --envs lunarlander
+python src/run_experiments.py --envs cartpole lunarlander \
+    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
 ```
 
 ### Korak 5 — Preuzmi rezultate
@@ -89,23 +116,18 @@ gcloud compute instances delete master-rad-vm --zone=us-central1-a
 
 ---
 
-## Opcija B — Multi-node klaster (napredna, nije obavezna)
+## Opcija B — Multi-node (BipedalWalker)
 
-Za pravi distribuirani Ray klaster na više VM-ova, koristi `ray_cluster.yaml`:
+Koristi `gcp/ray_cluster_bipedalwalker.yaml` (e2-standard-8 head + e2-standard-8 preemptible workeri).
+Ne koristi stari `ray_cluster.yaml` osim ako namerno hoćeš manji head (e2-standard-4).
 
 ```bash
-# Na lokalnom računaru (gde imaš gcloud i ray instaliran):
 pip install "ray[default]"
-
-# Uređaj project_id u ray_cluster.yaml, pa:
-ray up gcp/ray_cluster.yaml
-
-# Pokreni eksperiment na klasteru:
-ray submit gcp/ray_cluster.yaml src/train_ray.py \
-  --env LunarLander-v3 --workers 8 --iterations 200
-
-# OBAVEZNO ugasiti klaster kad završiš (inače naplaćuje!):
-ray down gcp/ray_cluster.yaml
+ray up gcp/ray_cluster_bipedalwalker.yaml
+ray attach gcp/ray_cluster_bipedalwalker.yaml
+python src/run_experiments.py --envs bipedalwalker \
+    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
 ---
@@ -115,21 +137,8 @@ ray down gcp/ray_cluster.yaml
 | Faza | Gde | Šta |
 |---|---|---|
 | 1. Razvoj | Lokalno | CartPole, debug, mali run-ovi |
-| 2. Eksperimenti | GCP VM (e2-standard-8) | LunarLander 1/2/4/8 workera |
-| 3. Demo | GCP ili lokalno | Snimanje GIF agenta (Pong opciono) |
-
----
-
-## Koliko košta šta
-
-| VM tip | vCPU | RAM | Cena/h | Preporučeno za |
-|---|---|---|---|---|
-| e2-standard-4 | 4 | 16 GB | ~$0.13 | CartPole, testiranje |
-| **e2-standard-8** | **8** | **32 GB** | **~$0.27** | **LunarLander (preporučeno)** |
-| n1-standard-4 + T4 GPU | 4 | 15 GB | ~$0.35 | Atari Pong |
-
-Za pun skalabilnost eksperiment (LunarLander, 4 worker konfiguracije):  
-~4h na e2-standard-8 = **~$1.08** od $300 kredita.
+| 2. CartPole + LunarLander | GCP e2-standard-16 | PPO / APPO / DQN, w=1,2,4,8 |
+| 3. BipedalWalker | GCP e2-standard-8 × N | PPO / APPO / SAC, w=1,2,4,8 |
 
 ---
 

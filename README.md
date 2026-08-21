@@ -1,165 +1,160 @@
-# Master rad PoC — Paralelizacija RL treniranja sa Ray
+# Master rad — Paralelizacija RL treniranja sa Ray
 
-Proof-of-concept za master rad: **paralelizacija treniranja agentskih modela u igračkim okruženjima korišćenjem Ray RLlib biblioteke i Google Cloud Platform resursa**.
+Projekat za master rad: **paralelizacija treniranja agentskih modela** u Gymnasium okruženjima sa **Ray RLlib**, lokalno i na **Google Cloud**.
 
-## Šta PoC pokriva
+Ista definicija eksperimenata (`config/experiments.yaml`) važi lokalno i na GCP. Klaster yaml-ovi u `gcp/` opisuju samo mašine.
+
+## Šta projekat pokriva
 
 | Komponenta | Opis |
 |---|---|
-| **Ray RLlib** | Distribuirano PPO treniranje sa N paralelnih `env_runner` procesa |
-| **Gymnasium** | CartPole-v1, LunarLander-v3, BipedalWalker-v3 |
-| **Metrike** | Throughput (koraci/sec), speedup, efikasnost, JSON logovi |
-| **GIF vizualizacija** | Random agent, naučeni agent, evolucija tokom treninga |
-| **GCP klaster** | Ray multi-node klaster na Google Cloud VM-ovima |
+| **Algoritmi** | PPO, APPO, DQN (diskretne akcije), SAC (kontinualne akcije) |
+| **Okruženja** | CartPole-v1, LunarLander-v3, BipedalWalker-v3 |
+| **Skalabilnost** | 1 / 2 / 4 workera lokalno; na GCP i 8 |
+| **Metrike** | Throughput (koraci/s), speedup, efikasnost, eval mean ± std |
+| **GIF-ovi** | Random agent, naučeni agent, evolucija tokom treninga |
+| **GCP** | Jedna VM za lake envove, multi-VM klaster za BipedalWalker |
 
-## Struktura projekta
+Koji algoritam ide na koji env:
+
+| | PPO | APPO | DQN | SAC |
+|---|---|---|---|---|
+| CartPole | da | da | da | — |
+| LunarLander | da | da | da | — |
+| BipedalWalker | da | da | — | da |
+
+## Struktura
 
 ```
-rad/
+master-rad/
 ├── config/
-│   └── experiments.yaml      # Env-i, PPO hiperparametri, worker counts
+│   └── experiments.yaml              # jedina definicija eksperimenata
 ├── src/
-│   ├── train_ray.py          # Distribuirano treniranje (Ray RLlib)
-│   ├── run_experiments.py    # Orchestracija skalabilnost eksperimenata
-│   ├── plot_results.py       # Generisanje grafikona iz JSON rezultata
-│   ├── play_game.py          # Snimanje GIF-ova (random, naučen, evolucija)
-│   └── metrics.py            # TrainingRun dataclass, JSON export
+│   ├── run_experiments.py            # orkestrator (env × algo × workers)
+│   ├── train_ray.py                  # PPO
+│   ├── train_appo.py                 # APPO
+│   ├── train_dqn.py                  # DQN
+│   ├── train_sac.py                  # SAC
+│   ├── evaluate_agent.py             # eval mean ± std + best GIF
+│   ├── play_game.py                  # snimanje epizoda / evolution GIF
+│   ├── plot_results.py               # grafikoni iz JSON rezultata
+│   └── metrics.py                    # TrainingRun, JSON export
 ├── gcp/
-│   ├── ray_cluster.yaml      # Ray autoscaler konfiguracija za GCP
-│   └── setup_vm.sh           # Setup skripta za GCP Ubuntu VM
-├── scripts/
-│   └── setup.sh              # Lokalni setup
+│   ├── ray_cluster_lunarlander.yaml  # CartPole + LunarLander (1 VM)
+│   ├── ray_cluster_bipedalwalker.yaml
+│   ├── ray_cluster.yaml              # opšti multi-node (retko)
+│   ├── setup_vm.sh
+│   └── README.md
+├── scripts/setup.sh
 ├── requirements.txt
-└── results/                  # Output (gitignored)
-    ├── *.json                # Metrike po run-u
-    ├── plots/                # PNG grafikoni
-    └── gifs/                 # Animacije agenta
+└── results/                          # gitignored
+    ├── *.json
+    ├── checkpoints/
+    ├── plots/
+    └── gifs/
 ```
 
 ## Instalacija
 
 ```bash
-# Klonirati repozitorijum i ući u folder
-cd rad
-
-# Kreirati virtuelno okruženje i instalirati zavisnosti
+cd master-rad
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Za LunarLander i BipedalWalker potreban je sistem-level swig:
+# LunarLander i BipedalWalker (Box2D):
 sudo apt-get install -y swig
 pip install "gymnasium[box2d]"
 ```
 
-## Pokretanje eksperimenata
+## Pokretanje
 
-### Brzi test (CartPole, ~2 min)
+Hiperparametri i broj iteracija su u `config/experiments.yaml`. Default workeri: `1 2 4`.
 
 ```bash
-cd /putanja/do/rad
 source .venv/bin/activate
 
-python src/train_ray.py \
-    --env CartPole-v1 \
-    --workers 2 \
-    --iterations 20
+# CartPole, svi diskretni algoritmi, GIF + eval
+python src/run_experiments.py --envs cartpole \
+    --algo ppo appo dqn --workers 4 --gif --evaluate 10
+
+# LunarLander
+python src/run_experiments.py --envs lunarlander \
+    --algo ppo appo dqn --workers 4 --gif --evaluate 10
+
+# BipedalWalker (lokalno w=4, ~30–60 min za PPO)
+python src/run_experiments.py --envs bipedalwalker \
+    --algo ppo appo sac --workers 4 --gif --evaluate 10
 ```
 
-### Skalabilnost eksperiment — sva tri okruženja
+Samo PPO (default `--algo ppo`):
 
 ```bash
-# CartPole i LunarLander (lokalno, ~30 min)
-python src/run_experiments.py \
-    --envs cartpole lunarlander \
-    --gif
-
-# BipedalWalker — scaling study (merenje throughputa, ~80 min)
-python src/run_experiments.py \
-    --envs bipedalwalker \
-    --workers 4 \
-    --scaling-only
+python src/run_experiments.py --envs cartpole --gif --evaluate 10
 ```
 
-### BipedalWalker — puno treniranje (lokalno, ~2h sa 4 workera)
+Jedan trening bez orkestratora:
 
 ```bash
-python src/run_experiments.py \
-    --envs bipedalwalker \
-    --workers 4 \
-    --gif
+python src/train_ray.py --env CartPole-v1 --workers 2 --iterations 20
 ```
 
-### Grafikoni
+Grafikoni iz `results/*.json`:
 
 ```bash
 python src/plot_results.py
-# PNG-ovi se čuvaju u results/plots/
+# PNG-ovi: results/plots/
 ```
 
 ## Okruženja
 
-| Ključ | Env ID | Zahtevnost | Preporučeno |
-|---|---|---|---|
-| `cartpole` | CartPole-v1 | Lako | Lokalno, ~2 min |
-| `lunarlander` | LunarLander-v3 | Srednje | Lokalno, ~25 min (w=4) |
-| `bipedalwalker` | BipedalWalker-v3 | Teško | GCP, ~30 min (w=8) |
+| Ključ | Env ID | Akcije | Budžet (iz yaml) | Gde |
+|---|---|---|---|---|
+| `cartpole` | CartPole-v1 | diskretne | PPO/APPO ~80 iter; DQN 100k koraka | lokalno ili GCP |
+| `lunarlander` | LunarLander-v3 | diskretne | PPO/APPO ~1M koraka (65 × 16384); DQN 100k | lokalno ili GCP |
+| `bipedalwalker` | BipedalWalker-v3 | kontinualne | PPO/APPO ~5.2M koraka (80 × 65536); SAC 512k | preporučeno GCP |
+
+Ciljne nagrade: CartPole 450, LunarLander 200, BipedalWalker 300.
+
+Tokom DQN treninga kolona **Reward** je ε-greedy. Greedy politiku gledaj u **Evolution** / `--evaluate`.
 
 ## Google Cloud Platform
 
-### Pokretanje Ray klastera na GCP
+Detaljnije: [`gcp/README.md`](gcp/README.md). Project: `master-rad-501412`, zona: `us-central1-a`.
+
+Lake igre (brz env korak) idu na **jednu** VM — mreža između mašina usporava. BipedalWalker ide na **više** VM-ova jer je fizika spora.
+
+| Eksperiment | Klaster | VM | Tip | vCPU | RAM | Cena/h |
+|---|---|---|---|---|---|---|
+| CartPole, LunarLander | `gcp/ray_cluster_lunarlander.yaml` | 1× head | **e2-standard-16** | 16 | 64 GB | ~$0.54 |
+| BipedalWalker | `gcp/ray_cluster_bipedalwalker.yaml` | head | **e2-standard-8** | 8 | 32 GB | ~$0.27 |
+| BipedalWalker | isto | workeri 0–8, preemptible | **e2-standard-8** | 8 | 32 GB | ~$0.08 / VM |
 
 ```bash
-# 1. Instalirati gcloud CLI i autentifikovati se
-gcloud auth login
-gcloud auth application-default login
-gcloud config set project TVOJ_PROJECT_ID
+# CartPole + LunarLander
+ray up gcp/ray_cluster_lunarlander.yaml
+ray attach gcp/ray_cluster_lunarlander.yaml
+python src/run_experiments.py --envs cartpole lunarlander \
+    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+ray down gcp/ray_cluster_lunarlander.yaml
 
-# 2. Uključiti potrebne API-je
-gcloud services enable compute.googleapis.com iam.googleapis.com cloudresourcemanager.googleapis.com
-
-# 3. Pokrenuti klaster (kreira VM-ove automatski)
-ray up gcp/ray_cluster.yaml
-
-# 4. SSH na head node i pokrenuti trening
-ray attach gcp/ray_cluster.yaml
-# Na VM-u:
-cd ~/master-rad
-python src/run_experiments.py \
-    --envs bipedalwalker \
-    --workers 8 \
-    --gif
-
-# 5. Kopirati rezultate lokalno
-ray rsync-down gcp/ray_cluster.yaml ~/master-rad/results/ ./results/gcp/
-
-# 6. Ugasiti klaster (OBAVEZNO — zaustavlja naplatu)
-ray down gcp/ray_cluster.yaml
+# BipedalWalker
+ray up gcp/ray_cluster_bipedalwalker.yaml
+ray attach gcp/ray_cluster_bipedalwalker.yaml
+python src/run_experiments.py --envs bipedalwalker \
+    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
+ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
-### Preporučena GCP konfiguracija
+Na GCP uvek `--workers 1 2 4 8`. **Obavezno** `ray down` kad završiš.
 
-| VM | Tip | vCPU | RAM | Cena/h |
-|---|---|---|---|---|
-| Head node | e2-standard-4 | 4 | 16 GB | ~$0.13 |
-| Worker node | e2-standard-8 | 8 | 32 GB | ~$0.27 |
-| **Ukupno** | | **12** | **48 GB** | **~$0.40** |
+## Metrike
 
-Ceo BipedalWalker eksperiment: ~30 min = **~$0.20**
+Iz `results/*.json` i `results/plots/`:
 
-## Metrike za master rad
-
-Iz `results/*.json` i grafikona izvlačiš:
-
-- **Throughput** (koraci/sec): koliko brže skuplja iskustvo sa više workera
-- **Speedup**: `T(w=1) / T(w=N)` — koliko puta je brže sa N workera
-- **Efikasnost**: `speedup / N` — koliko dobro koristimo dodatne resurse
-- **Kriva učenja**: nagrada tokom iteracija po worker konfiguraciji
-
-## Ray RLlib skalabilnost
-
-| Workers | Speedup | Efikasnost |
-|---|---|---|
-| 1 | 1.00x | 1.00 |
-| 2 | ~1.8x | ~0.90 |
-| 4 | ~3.1x | ~0.78 |
+- **Throughput** (koraci/s) — koliko brže se skuplja iskustvo sa više workera
+- **Speedup** — `T(w=1) / T(w=N)`
+- **Efikasnost** — `speedup / N`
+- **Eval mean ± std** — posle treninga, `--evaluate N`
+- **Kriva učenja** — nagrada po iteraciji
