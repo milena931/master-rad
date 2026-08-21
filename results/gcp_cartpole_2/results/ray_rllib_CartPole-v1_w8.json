@@ -1,0 +1,140 @@
+{
+  "framework": "ray_rllib",
+  "env_id": "CartPole-v1",
+  "num_workers": 8,
+  "start_time": 1787335944.7436576,
+  "end_time": 1787336031.2680697,
+  "iterations": [
+    {
+      "iteration": 0,
+      "episode_return_mean": 21.11413043478261,
+      "throughput_steps_per_sec": 884.4,
+      "elapsed_sec": 8.35,
+      "iter_sec": 4.52
+    },
+    {
+      "iteration": 1,
+      "episode_return_mean": 36.321100917431195,
+      "throughput_steps_per_sec": 889.9,
+      "elapsed_sec": 12.84,
+      "iter_sec": 4.5
+    },
+    {
+      "iteration": 2,
+      "episode_return_mean": 48.81,
+      "throughput_steps_per_sec": 856.0,
+      "elapsed_sec": 17.51,
+      "iter_sec": 4.67
+    },
+    {
+      "iteration": 3,
+      "episode_return_mean": 79.41,
+      "throughput_steps_per_sec": 884.9,
+      "elapsed_sec": 22.03,
+      "iter_sec": 4.52
+    },
+    {
+      "iteration": 4,
+      "episode_return_mean": 110.07,
+      "throughput_steps_per_sec": 886.3,
+      "elapsed_sec": 26.55,
+      "iter_sec": 4.51
+    },
+    {
+      "iteration": 5,
+      "episode_return_mean": 132.78,
+      "throughput_steps_per_sec": 880.7,
+      "elapsed_sec": 31.09,
+      "iter_sec": 4.54
+    },
+    {
+      "iteration": 6,
+      "episode_return_mean": 166.1,
+      "throughput_steps_per_sec": 881.8,
+      "elapsed_sec": 35.63,
+      "iter_sec": 4.54
+    },
+    {
+      "iteration": 7,
+      "episode_return_mean": 198.12,
+      "throughput_steps_per_sec": 883.8,
+      "elapsed_sec": 40.15,
+      "iter_sec": 4.53
+    },
+    {
+      "iteration": 8,
+      "episode_return_mean": 229.53,
+      "throughput_steps_per_sec": 883.3,
+      "elapsed_sec": 44.68,
+      "iter_sec": 4.53
+    },
+    {
+      "iteration": 9,
+      "episode_return_mean": 262.51,
+      "throughput_steps_per_sec": 852.1,
+      "elapsed_sec": 49.37,
+      "iter_sec": 4.69
+    },
+    {
+      "iteration": 10,
+      "episode_return_mean": 288.57,
+      "throughput_steps_per_sec": 885.5,
+      "elapsed_sec": 53.89,
+      "iter_sec": 4.52
+    },
+    {
+      "iteration": 11,
+      "episode_return_mean": 318.78,
+      "throughput_steps_per_sec": 881.4,
+      "elapsed_sec": 58.43,
+      "iter_sec": 4.54
+    },
+    {
+      "iteration": 12,
+      "episode_return_mean": 347.04,
+      "throughput_steps_per_sec": 887.2,
+      "elapsed_sec": 62.94,
+      "iter_sec": 4.51
+    },
+    {
+      "iteration": 13,
+      "episode_return_mean": 372.2,
+      "throughput_steps_per_sec": 885.1,
+      "elapsed_sec": 67.46,
+      "iter_sec": 4.52
+    },
+    {
+      "iteration": 14,
+      "episode_return_mean": 394.07,
+      "throughput_steps_per_sec": 885.1,
+      "elapsed_sec": 71.98,
+      "iter_sec": 4.52
+    },
+    {
+      "iteration": 15,
+      "episode_return_mean": 415.58,
+      "throughput_steps_per_sec": 883.5,
+      "elapsed_sec": 77.32,
+      "iter_sec": 4.53
+    },
+    {
+      "iteration": 16,
+      "episode_return_mean": 437.3,
+      "throughput_steps_per_sec": 853.3,
+      "elapsed_sec": 82.01,
+      "iter_sec": 4.69
+    },
+    {
+      "iteration": 17,
+      "episode_return_mean": 452.69,
+      "throughput_steps_per_sec": 885.6,
+      "elapsed_sec": 86.52,
+      "iter_sec": 4.52
+    }
+  ],
+  "checkpoint_path": "/home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w8",
+  "duration_sec": 86.52441215515137,
+  "final_reward": 452.69,
+  "best_reward": 452.69,
+  "avg_throughput_steps_per_sec": 879.4
+}

@@ -1,0 +1,2437 @@
+
+#################################################################
+  MASTER RAD — SKALABILNOST EKSPERIMENTI
+  Okruženja: ['cartpole']
+  Algoritmi: ['ppo', 'appo', 'dqn']
+  Workers:   [0, 1, 2, 4, 8, 16]
+  GIF-ovi:   da
+  Evaluacija: 10 epizoda po runu (mean ± std)
+  Ray:       lokalni klaster
+  Monitor:   CPU/RAM CSV u output dir
+#################################################################
+
+=================================================================
+  Okruženje: CartPole-v1
+  Balansiranje štapa — brzo, bez GPU
+=================================================================
+
+>>> PPO | env_runners=0 | CartPole-v1
+Lokalni Ray klaster podignut.
+  [monitor] CPU/RAM → /home/ubuntu/master-rad/results/monitor_cartpole_ppo_appo_dqn_20260821_180134.csv  (interval 2.0s)
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  0  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=16
+   0 |      21.10 |       540 |      7.4 |         9
+   1 |      37.76 |       548 |      7.3 |        16
+   2 |      59.07 |       539 |      7.4 |        23
+   3 |      88.60 |       552 |      7.2 |        31
+   4 |     119.12 |       553 |      7.2 |        38
+   5 |     146.15 |       553 |      7.2 |        45
+   6 |     169.81 |       554 |      7.2 |        52
+   7 |     200.29 |       554 |      7.2 |        60
+   8 |     222.67 |       542 |      7.4 |        67
+   9 |     243.95 |       552 |      7.2 |        74
+  10 |     261.41 |       553 |      7.2 |        81
+  11 |     282.86 |       553 |      7.2 |        89
+  12 |     304.93 |       553 |      7.2 |        96
+  13 |     325.44 |       553 |      7.2 |       103
+  14 |     344.52 |       541 |      7.4 |       111
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     362.90 |       553 |      7.2 |       119
+  16 |     378.89 |       553 |      7.2 |       126
+  17 |     397.82 |       553 |      7.2 |       133
+  18 |     418.97 |       553 |      7.2 |       140
+  19 |     438.36 |       553 |      7.2 |       148
+  20 |     452.16 |       542 |      7.4 |       155
+
+  Ciljna nagrada 450 dostignuta za 155s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w0
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=0): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w0_trained.gif  (500 frejmova, 68 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w0_evolution.gif  (740 frejmova, 294 KB)
+
+Prosečni throughput: 550 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w0.json
+
+>>> Evaluacija (10 epizoda) | ppo_w0
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w0
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w0_best.gif  (500 frejmova, 127 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w0_best.gif
+  ppo_w0: mean=500.00 ± 0.00
+
+>>> PPO | env_runners=1 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  1  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=22
+   0 |      22.65 |       536 |      7.5 |        11
+   1 |      35.00 |       545 |      7.3 |        18
+   2 |      55.96 |       547 |      7.3 |        25
+   3 |      86.81 |       548 |      7.3 |        33
+   4 |     117.35 |       547 |      7.3 |        40
+   5 |     142.72 |       538 |      7.4 |        47
+   6 |     169.89 |       549 |      7.3 |        55
+   7 |     199.07 |       549 |      7.3 |        62
+   8 |     227.20 |       549 |      7.3 |        69
+   9 |     251.68 |       550 |      7.3 |        76
+  10 |     279.65 |       549 |      7.3 |        84
+  11 |     305.02 |       537 |      7.4 |        91
+  12 |     329.95 |       550 |      7.3 |        98
+  13 |     356.87 |       550 |      7.3 |       106
+  14 |     380.19 |       550 |      7.3 |       113
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     405.27 |       549 |      7.3 |       121
+  16 |     427.26 |       550 |      7.3 |       128
+  17 |     446.38 |       548 |      7.3 |       136
+  18 |     465.66 |       537 |      7.5 |       143
+
+  Ciljna nagrada 450 dostignuta za 143s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w1
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=1): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w1_trained.gif  (500 frejmova, 149 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w1_evolution.gif  (746 frejmova, 346 KB)
+
+Prosečni throughput: 546 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w1.json
+
+>>> Evaluacija (10 epizoda) | ppo_w1
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w1
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w1_best.gif  (500 frejmova, 141 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w1_best.gif
+  ppo_w1: mean=500.00 ± 0.00
+
+>>> PPO | env_runners=2 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  2  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=17
+   0 |      21.60 |       689 |      5.8 |         9
+   1 |      39.17 |       692 |      5.8 |        15
+   2 |      54.95 |       696 |      5.7 |        21
+   3 |      87.50 |       699 |      5.7 |        26
+   4 |     122.11 |       698 |      5.7 |        32
+   5 |     152.32 |       700 |      5.7 |        38
+   6 |     182.03 |       681 |      5.9 |        44
+   7 |     212.79 |       704 |      5.7 |        49
+   8 |     241.85 |       699 |      5.7 |        55
+   9 |     275.50 |       704 |      5.7 |        61
+  10 |     302.35 |       703 |      5.7 |        66
+  11 |     329.58 |       703 |      5.7 |        72
+  12 |     357.08 |       683 |      5.9 |        78
+  13 |     378.31 |       700 |      5.7 |        84
+  14 |     400.72 |       698 |      5.7 |        89
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     424.46 |       698 |      5.7 |        96
+  16 |     442.80 |       698 |      5.7 |       102
+  17 |     462.43 |       698 |      5.7 |       107
+
+  Ciljna nagrada 450 dostignuta za 107s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w2
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=2): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w2_trained.gif  (500 frejmova, 116 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w2_evolution.gif  (741 frejmova, 313 KB)
+
+Prosečni throughput: 697 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w2.json
+
+>>> Evaluacija (10 epizoda) | ppo_w2
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w2
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w2_best.gif  (500 frejmova, 133 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w2_best.gif
+  ppo_w2: mean=500.00 ± 0.00
+
+>>> PPO | env_runners=4 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  4  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=21
+   0 |      23.72 |       786 |      5.1 |         9
+   1 |      35.70 |       813 |      4.9 |        14
+   2 |      55.38 |       813 |      4.9 |        18
+   3 |      83.86 |       817 |      4.9 |        23
+   4 |     115.84 |       817 |      4.9 |        28
+   5 |     144.45 |       816 |      4.9 |        33
+   6 |     175.94 |       815 |      4.9 |        38
+   7 |     207.62 |       791 |      5.1 |        43
+   8 |     243.65 |       816 |      4.9 |        48
+   9 |     279.53 |       816 |      4.9 |        53
+  10 |     313.46 |       816 |      4.9 |        58
+  11 |     342.65 |       815 |      4.9 |        63
+  12 |     371.38 |       819 |      4.9 |        68
+  13 |     398.09 |       820 |      4.9 |        72
+  14 |     422.94 |       793 |      5.0 |        78
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     444.06 |       816 |      4.9 |        83
+  16 |     462.95 |       817 |      4.9 |        88
+
+  Ciljna nagrada 450 dostignuta za 88s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w4
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=4): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w4_trained.gif  (500 frejmova, 128 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w4_evolution.gif  (745 frejmova, 385 KB)
+
+Prosečni throughput: 812 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | ppo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w4_best.gif  (500 frejmova, 180 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w4_best.gif
+  ppo_w4: mean=500.00 ± 0.00
+
+>>> PPO | env_runners=8 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  8  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=21
+   0 |      21.11 |       884 |      4.5 |         8
+   1 |      36.32 |       890 |      4.5 |        13
+   2 |      48.81 |       856 |      4.7 |        18
+   3 |      79.41 |       885 |      4.5 |        22
+   4 |     110.07 |       886 |      4.5 |        27
+   5 |     132.78 |       881 |      4.5 |        31
+   6 |     166.10 |       882 |      4.5 |        36
+   7 |     198.12 |       884 |      4.5 |        40
+   8 |     229.53 |       883 |      4.5 |        45
+   9 |     262.51 |       852 |      4.7 |        49
+  10 |     288.57 |       885 |      4.5 |        54
+  11 |     318.78 |       881 |      4.5 |        58
+  12 |     347.04 |       887 |      4.5 |        63
+  13 |     372.20 |       885 |      4.5 |        67
+  14 |     394.07 |       885 |      4.5 |        72
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     415.58 |       884 |      4.5 |        77
+  16 |     437.30 |       853 |      4.7 |        82
+  17 |     452.69 |       886 |      4.5 |        87
+
+  Ciljna nagrada 450 dostignuta za 87s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w8
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=8): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w8_trained.gif  (500 frejmova, 107 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w8_evolution.gif  (745 frejmova, 327 KB)
+
+Prosečni throughput: 879 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w8.json
+
+>>> Evaluacija (10 epizoda) | ppo_w8
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w8
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w8_best.gif  (500 frejmova, 138 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w8_best.gif
+  ppo_w8: mean=500.00 ± 0.00
+
+>>> PPO | env_runners=16 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  16  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=16
+   0 |      21.32 |       887 |      4.5 |        10
+   1 |      33.57 |       891 |      4.5 |        15
+   2 |      51.64 |       886 |      4.5 |        19
+   3 |      79.91 |       895 |      4.5 |        24
+   4 |     105.62 |       860 |      4.7 |        28
+   5 |     124.23 |       887 |      4.5 |        33
+   6 |     145.53 |       888 |      4.5 |        37
+   7 |     162.64 |       890 |      4.5 |        42
+   8 |     180.79 |       891 |      4.5 |        46
+   9 |     200.02 |       893 |      4.5 |        51
+  10 |     223.71 |       888 |      4.5 |        55
+  11 |     253.96 |       852 |      4.7 |        60
+  12 |     278.56 |       887 |      4.5 |        64
+  13 |     309.47 |       888 |      4.5 |        69
+  14 |     338.65 |       888 |      4.5 |        73
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     359.46 |       881 |      4.5 |        79
+  16 |     386.90 |       893 |      4.5 |        83
+  17 |     410.29 |       894 |      4.5 |        88
+  18 |     433.43 |       849 |      4.7 |        92
+  19 |     454.72 |       885 |      4.5 |        97
+
+  Ciljna nagrada 450 dostignuta za 97s!
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w16
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=16): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w16_trained.gif  (500 frejmova, 115 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ray_w16_evolution.gif  (740 frejmova, 278 KB)
+
+Prosečni throughput: 884 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/ray_rllib_CartPole-v1_w16.json
+
+>>> Evaluacija (10 epizoda) | ppo_w16
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/ppo_cartpole_w16
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w16_best.gif  (500 frejmova, 121 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/ppo_w16_best.gif
+  ppo_w16: mean=500.00 ± 0.00
+
+>>> APPO | env_runners=0 | CartPole-v1
+  [INFO] APPO zahteva num_env_runners >= 1. Postavljam na 1 (bilo: 0).
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       1  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=16
+   0 |      21.51 |      1158 |      3.5 |         6
+   1 |      21.96 |      1137 |      3.5 |        10
+   2 |      26.04 |      1145 |      3.5 |        13
+   3 |      27.65 |      1145 |      3.5 |        17
+   4 |      29.86 |      1149 |      3.5 |        20
+   5 |      32.12 |      1157 |      3.5 |        24
+   6 |      32.38 |      1155 |      3.5 |        27
+   7 |      37.31 |      1162 |      3.4 |        31
+   8 |      42.58 |      1166 |      3.4 |        34
+   9 |      44.34 |      1165 |      3.4 |        38
+  10 |      47.85 |      1167 |      3.4 |        41
+  11 |      50.46 |      1164 |      3.4 |        44
+  12 |      52.00 |      1171 |      3.4 |        48
+  13 |      61.26 |      1176 |      3.4 |        51
+  14 |      61.97 |      1157 |      3.5 |        55
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈205
+  15 |      62.15 |      1162 |      3.4 |        59
+  16 |      66.19 |      1172 |      3.4 |        62
+  17 |      71.17 |      1168 |      3.4 |        66
+  18 |      75.79 |      1168 |      3.4 |        69
+  19 |      79.55 |      1168 |      3.4 |        72
+  20 |      84.00 |      1162 |      3.4 |        76
+  21 |      86.56 |      1149 |      3.5 |        79
+  22 |      84.44 |      1152 |      3.5 |        83
+  23 |      91.76 |      1177 |      3.4 |        86
+  24 |     102.79 |      1179 |      3.4 |        90
+  25 |     114.41 |      1182 |      3.4 |        93
+  26 |     121.53 |      1174 |      3.4 |        96
+  27 |     130.87 |      1177 |      3.4 |       100
+  28 |     141.49 |      1186 |      3.4 |       103
+  29 |     151.79 |      1181 |      3.4 |       107
+  [Evolution] Iter 30 | nagrada≈300
+  30 |     159.30 |      1183 |      3.4 |       111
+  31 |     169.77 |      1178 |      3.4 |       114
+  32 |     171.21 |      1172 |      3.4 |       118
+  33 |     180.52 |      1161 |      3.4 |       121
+  34 |     189.43 |      1162 |      3.4 |       124
+  35 |     205.36 |      1113 |      3.6 |       128
+  36 |     212.41 |      1154 |      3.5 |       132
+  37 |     226.98 |      1161 |      3.4 |       135
+  38 |     250.54 |      1158 |      3.5 |       138
+  39 |     263.84 |      1157 |      3.5 |       142
+  40 |     270.80 |      1157 |      3.5 |       145
+  41 |     280.67 |      1155 |      3.5 |       149
+  42 |     284.58 |      1153 |      3.5 |       152
+  43 |     293.33 |      1159 |      3.5 |       156
+  44 |     296.15 |      1155 |      3.5 |       159
+  [Evolution] Iter 45 | nagrada≈225
+  45 |     288.76 |      1162 |      3.4 |       163
+  46 |     276.83 |      1158 |      3.5 |       167
+  47 |     259.23 |      1158 |      3.5 |       170
+  48 |     242.92 |      1169 |      3.4 |       174
+  49 |     220.56 |      1178 |      3.4 |       177
+  50 |     215.59 |      1185 |      3.4 |       180
+  51 |     196.53 |      1181 |      3.4 |       184
+  52 |     186.09 |      1182 |      3.4 |       187
+  53 |     172.80 |      1180 |      3.4 |       191
+  54 |     170.73 |      1182 |      3.4 |       194
+  55 |     172.14 |      1174 |      3.4 |       197
+  56 |     175.83 |      1171 |      3.4 |       201
+  57 |     184.79 |      1172 |      3.4 |       204
+  58 |     199.05 |      1175 |      3.4 |       208
+  59 |     200.12 |      1183 |      3.4 |       211
+  [Evolution] Iter 60 | nagrada≈196
+  60 |     208.89 |      1179 |      3.4 |       215
+  61 |     217.06 |      1178 |      3.4 |       218
+  62 |     228.17 |      1172 |      3.4 |       222
+  63 |     229.42 |      1160 |      3.4 |       225
+  64 |     240.05 |      1160 |      3.4 |       229
+  65 |     247.19 |      1154 |      3.5 |       232
+  66 |     258.42 |      1157 |      3.5 |       236
+  67 |     262.85 |      1156 |      3.5 |       239
+  68 |     270.91 |      1162 |      3.4 |       242
+  69 |     267.75 |      1160 |      3.4 |       246
+  70 |     263.12 |      1154 |      3.5 |       249
+  71 |     265.52 |      1158 |      3.5 |       253
+  72 |     268.87 |      1161 |      3.4 |       256
+  73 |     262.90 |      1156 |      3.5 |       260
+  74 |     258.52 |      1168 |      3.4 |       263
+  [Evolution] Iter 75 | nagrada≈300
+  75 |     251.67 |      1168 |      3.4 |       267
+  76 |     243.71 |      1178 |      3.4 |       271
+  77 |     232.81 |      1179 |      3.4 |       274
+  78 |     237.46 |      1181 |      3.4 |       278
+  79 |     241.64 |      1126 |      3.6 |       281
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w0
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=1): nagrada=303
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_trained.gif  (303 frejmova, 219 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_evolution.gif  (1527 frejmova, 1522 KB)
+
+Prosečni throughput: 1165 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w1.json
+
+>>> Evaluacija (10 epizoda) | appo_w0
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w0
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     403.00
+       2 |     297.00
+       3 |     256.00
+       4 |     500.00
+       5 |     364.00
+       6 |     354.00
+       7 |     396.00
+       8 |     270.00
+       9 |     194.00
+      10 |     233.00
+
+────────────────────────────────────────
+  Prosek:  326.70  ±  88.47  (std)
+  Min:     194.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w0_best.gif  (500 frejmova, 143 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w0_best.gif
+  appo_w0: mean=326.70 ± 88.47
+
+>>> APPO | env_runners=1 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       1  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=16
+   0 |      20.96 |      1145 |      3.5 |         6
+   1 |      25.04 |      1143 |      3.5 |        10
+   2 |      25.01 |      1148 |      3.5 |        13
+   3 |      27.57 |      1154 |      3.5 |        17
+   4 |      27.38 |      1157 |      3.5 |        20
+   5 |      34.06 |      1162 |      3.4 |        24
+   6 |      38.62 |      1161 |      3.4 |        27
+   7 |      38.37 |      1159 |      3.5 |        31
+   8 |      46.77 |      1166 |      3.4 |        34
+   9 |      45.30 |      1166 |      3.4 |        38
+  10 |      52.92 |      1170 |      3.4 |        41
+  11 |      54.94 |      1170 |      3.4 |        44
+  12 |      56.96 |      1143 |      3.5 |        48
+  13 |      57.33 |      1146 |      3.5 |        51
+  14 |      65.40 |      1142 |      3.5 |        55
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈180
+  15 |      64.37 |      1141 |      3.5 |        59
+  16 |      73.70 |      1174 |      3.4 |        62
+  17 |      82.74 |      1179 |      3.4 |        66
+  18 |      89.09 |      1178 |      3.4 |        69
+  19 |      92.32 |      1180 |      3.4 |        73
+  20 |      98.99 |      1183 |      3.4 |        76
+  21 |     112.99 |      1178 |      3.4 |        79
+  22 |     126.32 |      1180 |      3.4 |        83
+  23 |     135.14 |      1184 |      3.4 |        86
+  24 |     146.57 |      1176 |      3.4 |        89
+  25 |     152.61 |      1173 |      3.4 |        93
+  26 |     157.79 |      1181 |      3.4 |        96
+  27 |     167.10 |      1174 |      3.4 |       100
+  28 |     166.98 |      1177 |      3.4 |       103
+  29 |     171.58 |      1179 |      3.4 |       106
+  [Evolution] Iter 30 | nagrada≈265
+  30 |     182.25 |      1184 |      3.4 |       111
+  31 |     193.11 |      1181 |      3.4 |       114
+  32 |     196.13 |      1182 |      3.4 |       117
+  33 |     212.75 |      1174 |      3.4 |       121
+  34 |     222.25 |      1183 |      3.4 |       124
+  35 |     237.10 |      1140 |      3.5 |       128
+  36 |     237.36 |      1179 |      3.4 |       131
+  37 |     244.86 |      1184 |      3.4 |       134
+  38 |     238.71 |      1184 |      3.4 |       138
+  39 |     231.23 |      1178 |      3.4 |       141
+  40 |     224.26 |      1153 |      3.5 |       145
+  41 |     213.54 |      1150 |      3.5 |       148
+  42 |     204.09 |      1156 |      3.5 |       152
+  43 |     211.48 |      1177 |      3.4 |       155
+  44 |     208.84 |      1187 |      3.4 |       158
+  [Evolution] Iter 45 | nagrada≈205
+  45 |     197.38 |      1185 |      3.4 |       162
+  46 |     191.24 |      1180 |      3.4 |       166
+  47 |     192.76 |      1183 |      3.4 |       169
+  48 |     192.00 |      1184 |      3.4 |       172
+  49 |     194.24 |      1183 |      3.4 |       176
+  50 |     204.62 |      1184 |      3.4 |       179
+  51 |     210.20 |      1180 |      3.4 |       183
+  52 |     216.49 |      1179 |      3.4 |       186
+  53 |     223.42 |      1182 |      3.4 |       189
+  54 |     226.11 |      1179 |      3.4 |       193
+  55 |     230.65 |      1177 |      3.4 |       196
+  56 |     233.81 |      1153 |      3.5 |       200
+  57 |     240.86 |      1156 |      3.5 |       203
+  58 |     245.29 |      1157 |      3.5 |       207
+  59 |     248.58 |      1158 |      3.5 |       210
+  [Evolution] Iter 60 | nagrada≈246
+  60 |     252.64 |      1160 |      3.4 |       214
+  61 |     259.41 |      1156 |      3.5 |       218
+  62 |     266.88 |      1158 |      3.5 |       221
+  63 |     278.21 |      1159 |      3.4 |       224
+  64 |     274.50 |      1157 |      3.5 |       228
+  65 |     284.33 |      1159 |      3.5 |       231
+  66 |     281.23 |      1157 |      3.5 |       235
+  67 |     281.37 |      1155 |      3.5 |       238
+  68 |     283.50 |      1148 |      3.5 |       242
+  69 |     292.01 |      1151 |      3.5 |       245
+  70 |     284.54 |      1152 |      3.5 |       249
+  71 |     289.82 |      1153 |      3.5 |       252
+  72 |     288.70 |      1154 |      3.5 |       256
+  73 |     289.16 |      1156 |      3.5 |       259
+  74 |     292.70 |      1158 |      3.5 |       263
+  [Evolution] Iter 75 | nagrada≈300
+  75 |     295.93 |      1158 |      3.5 |       267
+  76 |     281.23 |      1156 |      3.5 |       270
+  77 |     283.23 |      1155 |      3.5 |       274
+  78 |     284.79 |      1112 |      3.6 |       277
+  79 |     289.93 |      1155 |      3.5 |       281
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w1
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=1): nagrada=229
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_trained.gif  (229 frejmova, 200 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_evolution.gif  (1597 frejmova, 1600 KB)
+
+Prosečni throughput: 1166 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w1.json
+
+>>> Evaluacija (10 epizoda) | appo_w1
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w1
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     399.00
+       3 |     299.00
+       4 |     412.00
+       5 |     232.00
+       6 |     370.00
+       7 |     318.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  403.00  ±  92.79  (std)
+  Min:     232.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_best.gif  (500 frejmova, 156 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w1_best.gif
+  appo_w1: mean=403.00 ± 92.79
+
+>>> APPO | env_runners=2 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       2  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=33
+   0 |      24.54 |      2262 |      1.8 |         5
+   1 |      22.99 |      2280 |      1.8 |         7
+   2 |      23.98 |      2274 |      1.8 |         8
+   3 |      26.38 |      2281 |      1.8 |        10
+   4 |      30.68 |      2276 |      1.8 |        12
+   5 |      32.57 |      2269 |      1.8 |        14
+   6 |      32.73 |      2275 |      1.8 |        15
+   7 |      34.54 |      2309 |      1.7 |        17
+   8 |      43.20 |      2318 |      1.7 |        19
+   9 |      43.77 |      2342 |      1.7 |        21
+  10 |      47.25 |      2335 |      1.7 |        22
+  11 |      53.28 |      2340 |      1.7 |        24
+  12 |      56.34 |      2311 |      1.7 |        26
+  13 |      55.80 |      2302 |      1.7 |        27
+  14 |      61.23 |      2326 |      1.7 |        29
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈116
+  15 |      68.03 |      2323 |      1.7 |        31
+  16 |      70.97 |      2291 |      1.7 |        33
+  17 |      70.47 |      2300 |      1.7 |        35
+  18 |      73.58 |      2297 |      1.7 |        37
+  19 |      81.43 |      2347 |      1.7 |        38
+  20 |      91.16 |      2345 |      1.7 |        40
+  21 |      96.29 |      2349 |      1.7 |        42
+  22 |     104.85 |      2329 |      1.7 |        43
+  23 |     113.25 |      2354 |      1.7 |        45
+  24 |     121.68 |      2348 |      1.7 |        47
+  25 |     132.19 |      2355 |      1.7 |        48
+  26 |     137.18 |      2357 |      1.7 |        50
+  27 |     150.08 |      2359 |      1.7 |        52
+  28 |     150.30 |      2351 |      1.7 |        54
+  29 |     149.01 |      2343 |      1.7 |        55
+  [Evolution] Iter 30 | nagrada≈135
+  30 |     149.32 |      2348 |      1.7 |        57
+  31 |     146.92 |      2351 |      1.7 |        59
+  32 |     154.15 |      2345 |      1.7 |        61
+  33 |     153.98 |      2347 |      1.7 |        62
+  34 |     161.03 |      2339 |      1.7 |        64
+  35 |     165.80 |      2351 |      1.7 |        66
+  36 |     165.69 |      2345 |      1.7 |        68
+  37 |     173.14 |      2344 |      1.7 |        69
+  38 |     173.43 |      2349 |      1.7 |        71
+  39 |     176.79 |      2339 |      1.7 |        73
+  40 |     180.46 |      2339 |      1.7 |        74
+  41 |     184.33 |      2354 |      1.7 |        76
+  42 |     188.91 |      2350 |      1.7 |        78
+  43 |     202.41 |      2352 |      1.7 |        79
+  44 |     210.16 |      2343 |      1.7 |        81
+  [Evolution] Iter 45 | nagrada≈300
+  45 |     219.43 |      2371 |      1.7 |        84
+  46 |     221.46 |      2367 |      1.7 |        85
+  47 |     236.10 |      2363 |      1.7 |        87
+  48 |     245.34 |      2368 |      1.7 |        89
+  49 |     235.54 |      2357 |      1.7 |        90
+  50 |     241.87 |      2366 |      1.7 |        92
+  51 |     243.29 |      2365 |      1.7 |        94
+  52 |     259.52 |      2369 |      1.7 |        96
+  53 |     261.26 |      2373 |      1.7 |        97
+  54 |     259.17 |      2368 |      1.7 |        99
+  55 |     260.76 |      2375 |      1.7 |       101
+  56 |     255.37 |      2373 |      1.7 |       102
+  57 |     240.45 |      2366 |      1.7 |       104
+  58 |     230.93 |      2326 |      1.7 |       106
+  59 |     219.91 |      2349 |      1.7 |       107
+  [Evolution] Iter 60 | nagrada≈300
+  60 |     222.93 |      2350 |      1.7 |       110
+  61 |     229.62 |      2361 |      1.7 |       112
+  62 |     236.40 |      2367 |      1.7 |       113
+  63 |     241.82 |      2359 |      1.7 |       115
+  64 |     241.97 |      2355 |      1.7 |       117
+  65 |     241.25 |      2351 |      1.7 |       118
+  66 |     233.12 |      2330 |      1.7 |       120
+  67 |     228.67 |      2366 |      1.7 |       122
+  68 |     227.63 |      2303 |      1.7 |       124
+  69 |     226.33 |      2338 |      1.7 |       125
+  70 |     223.37 |      2332 |      1.7 |       127
+  71 |     227.50 |      2349 |      1.7 |       129
+  72 |     231.53 |      2371 |      1.7 |       130
+  73 |     229.46 |      2181 |      1.8 |       132
+  74 |     224.77 |      2368 |      1.7 |       134
+  [Evolution] Iter 75 | nagrada≈246
+  75 |     225.78 |      2371 |      1.7 |       136
+  76 |     237.26 |      2372 |      1.7 |       138
+  77 |     237.09 |      2356 |      1.7 |       140
+  78 |     238.45 |      2334 |      1.7 |       141
+  79 |     238.62 |      2334 |      1.7 |       143
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w2
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=2): nagrada=263
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w2_trained.gif  (263 frejmova, 210 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w2_evolution.gif  (1477 frejmova, 1524 KB)
+
+Prosečni throughput: 2338 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w2.json
+
+>>> Evaluacija (10 epizoda) | appo_w2
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w2
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     410.00
+       2 |     347.00
+       3 |     343.00
+       4 |     337.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     442.00
+       9 |     433.00
+      10 |     333.00
+
+────────────────────────────────────────
+  Prosek:  414.50  ±  67.35  (std)
+  Min:     333.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w2_best.gif  (500 frejmova, 234 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w2_best.gif
+  appo_w2: mean=414.50 ± 67.36
+
+>>> APPO | env_runners=4 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       4  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=12
+   0 |      22.70 |      3582 |      1.1 |         4
+   1 |      22.72 |      4346 |      0.9 |         5
+   2 |      24.37 |      4288 |      0.9 |         6
+   3 |      27.21 |      4367 |      0.9 |         7
+   4 |      32.44 |      4348 |      0.9 |         8
+   5 |      28.71 |      4376 |      0.9 |         9
+   6 |      34.15 |      4397 |      0.9 |        10
+   7 |      38.03 |      4367 |      0.9 |        11
+   8 |      43.30 |      4379 |      0.9 |        12
+   9 |      48.20 |      4338 |      0.9 |        13
+  10 |      52.45 |      4340 |      0.9 |        14
+  11 |      54.92 |      4393 |      0.9 |        14
+  12 |      58.04 |      4426 |      0.9 |        15
+  13 |      61.15 |      4456 |      0.9 |        16
+  14 |      69.89 |      4383 |      0.9 |        17
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈98
+  15 |      75.44 |      4389 |      0.9 |        18
+  16 |      73.10 |      4412 |      0.9 |        19
+  17 |      74.68 |      4271 |      0.9 |        20
+  18 |      80.62 |      4262 |      0.9 |        21
+  19 |      85.06 |      4420 |      0.9 |        22
+  20 |      93.63 |      4410 |      0.9 |        23
+  21 |      96.53 |      4394 |      0.9 |        24
+  22 |     107.29 |      4417 |      0.9 |        25
+  23 |     119.95 |      4414 |      0.9 |        26
+  24 |     131.79 |      4343 |      0.9 |        27
+  25 |     140.10 |      4368 |      0.9 |        28
+  26 |     145.46 |      4395 |      0.9 |        28
+  27 |     144.69 |      4413 |      0.9 |        29
+  28 |     147.95 |      4385 |      0.9 |        30
+  29 |     147.77 |      4386 |      0.9 |        31
+  [Evolution] Iter 30 | nagrada≈300
+  30 |     148.27 |      4380 |      0.9 |        33
+  31 |     163.16 |      4438 |      0.9 |        34
+  32 |     169.42 |      4373 |      0.9 |        35
+  33 |     185.45 |      4352 |      0.9 |        36
+  34 |     200.90 |      4425 |      0.9 |        37
+  35 |     213.20 |      4465 |      0.9 |        37
+  36 |     222.58 |      4455 |      0.9 |        38
+  37 |     228.60 |      4456 |      0.9 |        39
+  38 |     233.52 |      4389 |      0.9 |        40
+  39 |     220.90 |      4433 |      0.9 |        41
+  40 |     201.53 |      4415 |      0.9 |        42
+  41 |     189.09 |      4405 |      0.9 |        43
+  42 |     180.65 |      4485 |      0.9 |        44
+  43 |     177.26 |      4481 |      0.9 |        45
+  44 |     166.27 |      4479 |      0.9 |        46
+  [Evolution] Iter 45 | nagrada≈126
+  45 |     156.15 |      4495 |      0.9 |        47
+  46 |     160.05 |      4465 |      0.9 |        48
+  47 |     160.50 |      4447 |      0.9 |        49
+  48 |     167.64 |      4381 |      0.9 |        50
+  49 |     183.43 |      4387 |      0.9 |        50
+  50 |     195.48 |      4421 |      0.9 |        51
+  51 |     198.52 |      4424 |      0.9 |        52
+  52 |     205.80 |      4391 |      0.9 |        53
+  53 |     196.79 |      4380 |      0.9 |        54
+  54 |     185.85 |      4437 |      0.9 |        55
+  55 |     170.49 |      4460 |      0.9 |        56
+  56 |     155.52 |      4457 |      0.9 |        57
+  57 |     150.87 |      4385 |      0.9 |        58
+  58 |     145.81 |      4429 |      0.9 |        59
+  59 |     153.57 |      4488 |      0.9 |        59
+  [Evolution] Iter 60 | nagrada≈300
+  60 |     158.05 |      4437 |      0.9 |        61
+  61 |     163.23 |      4401 |      0.9 |        62
+  62 |     173.53 |      4392 |      0.9 |        63
+  63 |     178.16 |      4457 |      0.9 |        64
+  64 |     185.24 |      4392 |      0.9 |        65
+  65 |     186.77 |      4457 |      0.9 |        66
+  66 |     180.59 |      4441 |      0.9 |        67
+  67 |     168.20 |      4481 |      0.9 |        67
+  68 |     155.20 |      4474 |      0.9 |        68
+  69 |     153.44 |      4400 |      0.9 |        69
+  70 |     147.38 |      4456 |      0.9 |        70
+  71 |     153.25 |      4491 |      0.9 |        71
+  72 |     155.45 |      4430 |      0.9 |        72
+  73 |     156.97 |      4406 |      0.9 |        73
+  74 |     163.05 |      4308 |      0.9 |        74
+  [Evolution] Iter 75 | nagrada≈300
+  75 |     162.07 |      4457 |      0.9 |        76
+  76 |     156.97 |      4431 |      0.9 |        76
+  77 |     157.02 |      4419 |      0.9 |        77
+  78 |     159.61 |      4375 |      0.9 |        78
+  79 |     165.16 |      4422 |      0.9 |        79
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w4
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=4): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w4_trained.gif  (500 frejmova, 168 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w4_evolution.gif  (1608 frejmova, 1354 KB)
+
+Prosečni throughput: 4398 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | appo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w4_best.gif  (500 frejmova, 261 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w4_best.gif
+  appo_w4: mean=500.00 ± 0.00
+
+>>> APPO | env_runners=8 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       8  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=24
+   0 |      21.79 |      6237 |      0.6 |         4
+   1 |      23.94 |      6934 |      0.6 |         5
+   2 |      25.85 |      6717 |      0.6 |         5
+   3 |      26.77 |      6511 |      0.6 |         6
+   4 |      29.60 |      7048 |      0.6 |         7
+   5 |      33.51 |      6633 |      0.6 |         7
+   6 |      30.81 |      6651 |      0.6 |         8
+   7 |      40.41 |      6867 |      0.6 |         8
+   8 |      46.17 |      7006 |      0.6 |         9
+   9 |      41.82 |      6771 |      0.6 |        10
+  10 |      47.01 |      6736 |      0.6 |        10
+  11 |      52.86 |      7095 |      0.6 |        11
+  12 |      57.64 |      6835 |      0.6 |        11
+  13 |      62.34 |      6995 |      0.6 |        12
+  14 |      69.61 |      6862 |      0.6 |        12
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈100
+  15 |      72.38 |      7069 |      0.6 |        13
+  16 |      73.65 |      7192 |      0.6 |        14
+  17 |      79.89 |      6856 |      0.6 |        14
+  18 |      88.26 |      6830 |      0.6 |        15
+  19 |      95.34 |      6905 |      0.6 |        16
+  20 |     108.41 |      6628 |      0.6 |        16
+  21 |     120.07 |      7095 |      0.6 |        17
+  22 |     132.22 |      6815 |      0.6 |        17
+  23 |     143.22 |      7029 |      0.6 |        18
+  24 |     162.17 |      6559 |      0.6 |        19
+  25 |     172.52 |      7300 |      0.6 |        19
+  26 |     189.55 |      6571 |      0.6 |        20
+  27 |     201.04 |      7013 |      0.6 |        20
+  28 |     217.12 |      7275 |      0.5 |        21
+  29 |     231.64 |      6849 |      0.6 |        21
+  [Evolution] Iter 30 | nagrada≈264
+  30 |     242.72 |      7020 |      0.6 |        23
+  31 |     254.46 |      7111 |      0.6 |        23
+  32 |     255.47 |      6741 |      0.6 |        24
+  33 |     261.99 |      7172 |      0.6 |        24
+  34 |     266.97 |      6797 |      0.6 |        25
+  35 |     246.71 |      6963 |      0.6 |        26
+  36 |     233.89 |      6815 |      0.6 |        26
+  37 |     210.50 |      6862 |      0.6 |        27
+  38 |     198.03 |      6928 |      0.6 |        27
+  39 |     186.25 |      6804 |      0.6 |        28
+  40 |     181.04 |      7127 |      0.6 |        28
+  41 |     172.37 |      6938 |      0.6 |        29
+  42 |     175.41 |      7055 |      0.6 |        30
+  43 |     170.26 |      7009 |      0.6 |        30
+  44 |     174.61 |      7261 |      0.6 |        31
+  [Evolution] Iter 45 | nagrada≈159
+  45 |     178.40 |      7018 |      0.6 |        32
+  46 |     190.41 |      7192 |      0.6 |        32
+  47 |     192.88 |      6714 |      0.6 |        33
+  48 |     206.52 |      6779 |      0.6 |        33
+  49 |     215.11 |      6996 |      0.6 |        34
+  50 |     219.96 |      6678 |      0.6 |        35
+  51 |     227.91 |      6905 |      0.6 |        35
+  52 |     226.72 |      7061 |      0.6 |        36
+  53 |     221.50 |      6869 |      0.6 |        36
+  54 |     210.90 |      6772 |      0.6 |        37
+  55 |     206.48 |      6940 |      0.6 |        37
+  56 |     195.45 |      7075 |      0.6 |        38
+  57 |     195.73 |      6963 |      0.6 |        39
+  58 |     198.59 |      7153 |      0.6 |        39
+  59 |     197.69 |      6851 |      0.6 |        40
+  [Evolution] Iter 60 | nagrada≈300
+  60 |     196.95 |      6935 |      0.6 |        41
+  61 |     207.04 |      6889 |      0.6 |        42
+  62 |     203.07 |      7104 |      0.6 |        42
+  63 |     195.94 |      7010 |      0.6 |        43
+  64 |     189.16 |      7159 |      0.6 |        43
+  65 |     165.32 |      6983 |      0.6 |        44
+  66 |     154.46 |      7091 |      0.6 |        45
+  67 |     143.08 |      6925 |      0.6 |        45
+  68 |     139.11 |      6914 |      0.6 |        46
+  69 |     147.66 |      7165 |      0.6 |        46
+  70 |     148.39 |      6950 |      0.6 |        47
+  71 |     157.09 |      7388 |      0.5 |        47
+  72 |     159.86 |      7146 |      0.6 |        48
+  73 |     171.19 |      6812 |      0.6 |        49
+  74 |     182.18 |      7084 |      0.6 |        49
+  [Evolution] Iter 75 | nagrada≈300
+  75 |     187.25 |      6867 |      0.6 |        51
+  76 |     190.64 |      7198 |      0.6 |        51
+  77 |     197.14 |      6889 |      0.6 |        52
+  78 |     192.75 |      6981 |      0.6 |        52
+  79 |     194.86 |      6774 |      0.6 |        53
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w8
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=8): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w8_trained.gif  (500 frejmova, 252 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w8_evolution.gif  (1619 frejmova, 1476 KB)
+
+Prosečni throughput: 6934 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w8.json
+
+>>> Evaluacija (10 epizoda) | appo_w8
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w8
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     477.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  497.70  ±  6.90  (std)
+  Min:     477.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w8_best.gif  (500 frejmova, 236 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w8_best.gif
+  appo_w8: mean=497.70 ± 6.90
+
+>>> APPO | env_runners=16 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       16  ← asinhroni procesi
+  BatchSize:        4000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0005
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.4  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  4000 koraka
+  Ukupno koraka:    ~320k (80 itera)
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=11
+   0 |      20.95 |      7522 |      0.5 |         6
+   1 |      22.49 |      8403 |      0.5 |         6
+   2 |      25.70 |      8300 |      0.5 |         7
+   3 |      28.04 |      8589 |      0.5 |         7
+   4 |      28.16 |      8412 |      0.5 |         8
+   5 |      32.66 |      8453 |      0.5 |         8
+   6 |      35.57 |      8594 |      0.5 |         9
+   7 |      37.87 |      8694 |      0.5 |         9
+   8 |      41.18 |      8686 |      0.5 |        10
+   9 |      45.64 |      8463 |      0.5 |        10
+  10 |      50.17 |      8696 |      0.5 |        11
+  11 |      50.59 |      8445 |      0.5 |        11
+  12 |      52.19 |      8787 |      0.5 |        12
+  13 |      58.11 |      8602 |      0.5 |        12
+  14 |      65.65 |      8733 |      0.5 |        13
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈126
+  15 |      73.06 |      8643 |      0.5 |        13
+  16 |      75.68 |      8666 |      0.5 |        14
+  17 |      84.09 |      8435 |      0.5 |        14
+  18 |     101.23 |      8536 |      0.5 |        15
+  19 |     110.83 |      8689 |      0.5 |        15
+  20 |     117.76 |      8720 |      0.5 |        16
+  21 |     123.84 |      8409 |      0.5 |        16
+  22 |     130.46 |      8337 |      0.5 |        17
+  23 |     133.69 |      8516 |      0.5 |        17
+  24 |     140.39 |      8260 |      0.5 |        18
+  25 |     143.93 |      8710 |      0.5 |        18
+  26 |     151.13 |      8146 |      0.5 |        19
+  27 |     159.19 |      8392 |      0.5 |        19
+  28 |     160.30 |      8542 |      0.5 |        20
+  29 |     170.14 |      8877 |      0.5 |        20
+  [Evolution] Iter 30 | nagrada≈294
+  30 |     171.24 |      8743 |      0.5 |        21
+  31 |     175.92 |      8679 |      0.5 |        22
+  32 |     170.78 |      8411 |      0.5 |        22
+  33 |     165.90 |      8637 |      0.5 |        23
+  34 |     158.83 |      8366 |      0.5 |        23
+  35 |     150.44 |      8738 |      0.5 |        24
+  36 |     144.90 |      8752 |      0.5 |        24
+  37 |     133.55 |      8660 |      0.5 |        25
+  38 |     125.74 |      8682 |      0.5 |        25
+  39 |     125.15 |      8539 |      0.5 |        25
+  40 |     119.78 |      8678 |      0.5 |        26
+  41 |     118.35 |      8685 |      0.5 |        26
+  42 |     116.54 |      8549 |      0.5 |        27
+  43 |     122.66 |      8806 |      0.5 |        27
+  44 |     125.30 |      8991 |      0.4 |        28
+  [Evolution] Iter 45 | nagrada≈121
+  45 |     131.79 |      8839 |      0.5 |        29
+  46 |     135.00 |      8705 |      0.5 |        29
+  47 |     133.54 |      8723 |      0.5 |        29
+  48 |     142.38 |      8590 |      0.5 |        30
+  49 |     146.43 |      8585 |      0.5 |        30
+  50 |     160.43 |      8631 |      0.5 |        31
+  51 |     163.74 |      8452 |      0.5 |        31
+  52 |     171.53 |      8665 |      0.5 |        32
+  53 |     173.95 |      8501 |      0.5 |        32
+  54 |     182.28 |      8854 |      0.5 |        33
+  55 |     185.85 |      8529 |      0.5 |        33
+  56 |     189.47 |      8624 |      0.5 |        34
+  57 |     196.23 |      8624 |      0.5 |        34
+  58 |     203.41 |      8836 |      0.5 |        35
+  59 |     199.80 |      8501 |      0.5 |        35
+  [Evolution] Iter 60 | nagrada≈300
+  60 |     204.89 |      8419 |      0.5 |        36
+  61 |     202.05 |      8507 |      0.5 |        37
+  62 |     197.97 |      8688 |      0.5 |        37
+  63 |     198.70 |      8658 |      0.5 |        38
+  64 |     200.69 |      8639 |      0.5 |        38
+  65 |     190.06 |      8590 |      0.5 |        39
+  66 |     187.02 |      8567 |      0.5 |        39
+  67 |     179.15 |      8768 |      0.5 |        40
+  68 |     174.44 |      8332 |      0.5 |        40
+  69 |     168.76 |      8158 |      0.5 |        41
+  70 |     161.11 |      8400 |      0.5 |        41
+  71 |     161.40 |      8208 |      0.5 |        42
+  72 |     166.57 |      8528 |      0.5 |        42
+  73 |     172.87 |      8424 |      0.5 |        42
+  74 |     178.54 |      8604 |      0.5 |        43
+  [Evolution] Iter 75 | nagrada≈300
+  75 |     186.05 |      8520 |      0.5 |        44
+  76 |     179.68 |      8235 |      0.5 |        45
+  77 |     177.88 |      8472 |      0.5 |        45
+  78 |     171.98 |      8570 |      0.5 |        46
+  79 |     171.71 |      8399 |      0.5 |        46
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w16
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=16): nagrada=161
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w16_trained.gif  (161 frejmova, 138 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w16_evolution.gif  (1474 frejmova, 1502 KB)
+
+Prosečni throughput: 8556 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/appo_CartPole-v1_w16.json
+
+>>> Evaluacija (10 epizoda) | appo_w16
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/appo_cartpole_w16
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     378.00
+       2 |     152.00
+       3 |     145.00
+       4 |     253.00
+       5 |     152.00
+       6 |     287.00
+       7 |     191.00
+       8 |     178.00
+       9 |     181.00
+      10 |     219.00
+
+────────────────────────────────────────
+  Prosek:  213.60  ±  70.09  (std)
+  Min:     145.00
+  Max:     378.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w16_best.gif  (378 frejmova, 234 KB)
+  Best epizoda (378) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/appo_w16_best.gif
+  appo_w16: mean=213.60 ± 70.09
+
+>>> DQN | env_runners=1 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       1  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        32  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.01 za 50000 koraka
+  TargetUpdate:     svaka 500 grad. koraka
+  n_step:           3
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.0005
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 1. iteracija
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=13
+     1 |     1000 |      24.32 |       691 |         4
+     2 |     2000 |      23.02 |       203 |         9
+     3 |     3000 |      24.41 |       204 |        14
+     4 |     4000 |      29.21 |       204 |        19
+     5 |     5000 |      34.81 |       205 |        24
+     6 |     6000 |      44.96 |       206 |        29
+     7 |     7000 |      52.34 |       206 |        34
+     8 |     8000 |      61.99 |       206 |        39
+     9 |     9000 |      69.75 |       197 |        44
+    10 |    10000 |      77.66 |       206 |        49
+    11 |    11000 |      85.53 |       206 |        53
+    12 |    12000 |      93.55 |       206 |        58
+    13 |    13000 |     100.71 |       206 |        63
+    14 |    14000 |     107.33 |       206 |        68
+    15 |    15000 |     113.39 |       205 |        73
+    16 |    16000 |     118.81 |       205 |        78
+    17 |    17000 |     113.09 |       205 |        83
+    18 |    18000 |     110.80 |       206 |        87
+    19 |    19000 |     111.31 |       205 |        92
+    20 |    20000 |     113.10 |       206 |        97
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 20 | nagrada≈86
+    21 |    21000 |     110.23 |       205 |       102
+    22 |    22000 |     107.27 |       205 |       107
+    23 |    23000 |     108.98 |       205 |       112
+    24 |    24000 |     106.69 |       205 |       117
+    25 |    25000 |     109.23 |       205 |       122
+    26 |    26000 |     110.10 |       206 |       127
+    27 |    27000 |     111.38 |       206 |       131
+    28 |    28000 |     113.70 |       206 |       136
+    29 |    29000 |     119.41 |       194 |       141
+    30 |    30000 |     127.31 |       205 |       146
+    31 |    31000 |     130.68 |       205 |       151
+    32 |    32000 |     131.83 |       204 |       156
+    33 |    33000 |     133.99 |       204 |       161
+    34 |    34000 |     140.89 |       204 |       166
+    35 |    35000 |     149.46 |       205 |       171
+    36 |    36000 |     151.86 |       205 |       176
+    37 |    37000 |     154.86 |       205 |       181
+    38 |    38000 |     160.76 |       205 |       185
+    39 |    39000 |     169.01 |       204 |       190
+    40 |    40000 |     173.45 |       203 |       195
+  [Evolution] Iter 40 | nagrada≈500
+    41 |    41000 |     181.84 |       203 |       202
+    42 |    42000 |     189.08 |       204 |       206
+    43 |    43000 |     196.76 |       205 |       211
+    44 |    44000 |     204.57 |       205 |       216
+    45 |    45000 |     212.59 |       205 |       221
+    46 |    46000 |     220.73 |       204 |       226
+    47 |    47000 |     227.55 |       204 |       231
+    48 |    48000 |     234.11 |       204 |       236
+    49 |    49000 |     237.19 |       205 |       241
+    50 |    50000 |     243.42 |       205 |       246
+    51 |    51000 |     251.17 |       202 |       250
+    52 |    52000 |     257.21 |       202 |       255
+    53 |    53000 |     264.00 |       202 |       260
+    54 |    54000 |     270.13 |       187 |       266
+    55 |    55000 |     275.24 |       201 |       271
+    56 |    56000 |     284.50 |       201 |       276
+    57 |    57000 |     286.90 |       201 |       281
+    58 |    58000 |     293.09 |       201 |       286
+    59 |    59000 |     295.74 |       202 |       291
+    60 |    60000 |     284.37 |       202 |       296
+  [Evolution] Iter 60 | nagrada≈176
+    61 |    61000 |     253.12 |       202 |       301
+    62 |    62000 |     244.54 |       202 |       306
+    63 |    63000 |     244.98 |       202 |       311
+    64 |    64000 |     242.93 |       202 |       316
+    65 |    65000 |     244.35 |       201 |       321
+    66 |    66000 |     243.47 |       201 |       326
+    67 |    67000 |     233.79 |       202 |       331
+    68 |    68000 |     231.24 |       202 |       336
+    69 |    69000 |     229.77 |       202 |       341
+    70 |    70000 |     216.02 |       201 |       346
+    71 |    71000 |     208.19 |       200 |       351
+    72 |    72000 |     199.84 |       202 |       356
+    73 |    73000 |     198.39 |       203 |       360
+    74 |    74000 |     199.51 |       202 |       365
+    75 |    75000 |     198.46 |       202 |       370
+    76 |    76000 |     199.92 |       202 |       375
+    77 |    77000 |     203.71 |       203 |       380
+    78 |    78000 |     186.44 |       202 |       385
+    79 |    79000 |     190.25 |       202 |       390
+    80 |    80000 |     195.70 |       203 |       395
+  [Evolution] Iter 80 | nagrada≈383
+    81 |    81000 |     203.12 |       202 |       401
+    82 |    82000 |     209.18 |       203 |       406
+    83 |    83000 |     219.26 |       202 |       411
+    84 |    84000 |     185.96 |       201 |       416
+    85 |    85000 |     177.75 |       187 |       421
+    86 |    86000 |     176.03 |       202 |       426
+    87 |    87000 |     174.48 |       203 |       431
+    88 |    88000 |     178.14 |       202 |       436
+    89 |    89000 |     187.72 |       202 |       441
+    90 |    90000 |     172.45 |       202 |       446
+    91 |    91000 |     161.55 |       202 |       451
+    92 |    92000 |     155.94 |       202 |       456
+    93 |    93000 |     153.32 |       203 |       461
+    94 |    94000 |     159.39 |       203 |       466
+    95 |    95000 |     160.66 |       203 |       471
+    96 |    96000 |     169.35 |       203 |       476
+    97 |    97000 |     155.84 |       203 |       480
+    98 |    98000 |     151.97 |       198 |       486
+    99 |    99000 |     159.35 |       203 |       490
+   100 |   100000 |     161.93 |       203 |       495
+  [Evolution] Iter 100 | nagrada≈103
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w1
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=1): nagrada=101
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w1_trained.gif  (101 frejmova, 105 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w1_evolution.gif  (1442 frejmova, 1604 KB)
+
+Ukupno prikupljenih koraka: 100,000
+Prosečni throughput: 208 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/dqn_CartPole-v1_w1.json
+
+>>> Evaluacija (10 epizoda) | dqn_w1
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w1
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     108.00
+       2 |     103.00
+       3 |     109.00
+       4 |     107.00
+       5 |     104.00
+       6 |     107.00
+       7 |      99.00
+       8 |     102.00
+       9 |     107.00
+      10 |     105.00
+
+────────────────────────────────────────
+  Prosek:  105.10  ±  2.95  (std)
+  Min:     99.00
+  Max:     109.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w1_best.gif  (109 frejmova, 113 KB)
+  Best epizoda (109) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w1_best.gif
+  dqn_w1: mean=105.10 ± 2.95
+
+>>> DQN | env_runners=2 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       2  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        32  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.01 za 50000 koraka
+  TargetUpdate:     svaka 500 grad. koraka
+  n_step:           3
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.0005
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 1. iteracija
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=31
+     1 |     1000 |      22.23 |      1252 |         4
+     2 |     2000 |      23.46 |       365 |         7
+     3 |     3000 |      25.42 |       368 |         9
+     4 |     4000 |      30.69 |       370 |        12
+     5 |     5000 |      38.31 |       373 |        15
+     6 |     6000 |      43.97 |       372 |        17
+     7 |     7000 |      53.87 |       371 |        20
+     8 |     8000 |      63.26 |       371 |        23
+     9 |     9000 |      70.52 |       372 |        26
+    10 |    10000 |      79.87 |       370 |        28
+    11 |    11000 |      89.02 |       371 |        31
+    12 |    12000 |      97.68 |       368 |        34
+    13 |    13000 |     104.84 |       369 |        36
+    14 |    14000 |     114.06 |       289 |        40
+    15 |    15000 |     123.68 |       362 |        43
+    16 |    16000 |     132.94 |       364 |        45
+    17 |    17000 |     139.59 |       368 |        48
+    18 |    18000 |     147.07 |       368 |        51
+    19 |    19000 |     156.60 |       362 |        54
+    20 |    20000 |     163.94 |       364 |        56
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 20 | nagrada≈114
+    21 |    21000 |     169.38 |       363 |        59
+    22 |    22000 |     180.76 |       365 |        62
+    23 |    23000 |     185.74 |       363 |        65
+    24 |    24000 |     188.80 |       364 |        68
+    25 |    25000 |     190.29 |       364 |        70
+    26 |    26000 |     190.53 |       365 |        73
+    27 |    27000 |     192.00 |       364 |        76
+    28 |    28000 |     194.64 |       367 |        79
+    29 |    29000 |     196.18 |       365 |        81
+    30 |    30000 |     195.14 |       365 |        84
+    31 |    31000 |     200.09 |       365 |        87
+    32 |    32000 |     202.88 |       365 |        89
+    33 |    33000 |     202.19 |       365 |        92
+    34 |    34000 |     202.41 |       366 |        95
+    35 |    35000 |     194.84 |       366 |        98
+    36 |    36000 |     195.54 |       329 |       101
+    37 |    37000 |     202.00 |       363 |       103
+    38 |    38000 |     206.28 |       365 |       106
+    39 |    39000 |     197.84 |       364 |       109
+    40 |    40000 |     198.15 |       365 |       112
+  [Evolution] Iter 40 | nagrada≈197
+    41 |    41000 |     198.37 |       364 |       115
+    42 |    42000 |     195.31 |       364 |       118
+    43 |    43000 |     187.12 |       365 |       120
+    44 |    44000 |     184.61 |       367 |       123
+    45 |    45000 |     192.81 |       365 |       126
+    46 |    46000 |     196.22 |       364 |       129
+    47 |    47000 |     197.93 |       367 |       131
+    48 |    48000 |     197.08 |       368 |       134
+    49 |    49000 |     187.98 |       368 |       137
+    50 |    50000 |     184.24 |       367 |       140
+    51 |    51000 |     188.67 |       366 |       142
+    52 |    52000 |     186.18 |       363 |       145
+    53 |    53000 |     188.41 |       363 |       148
+    54 |    54000 |     188.96 |       364 |       151
+    55 |    55000 |     165.35 |       364 |       153
+    56 |    56000 |     167.11 |       365 |       156
+    57 |    57000 |     175.83 |       364 |       159
+    58 |    58000 |     164.21 |       361 |       162
+    59 |    59000 |     105.54 |       359 |       164
+    60 |    60000 |      58.78 |       362 |       167
+  [Evolution] Iter 60 | nagrada≈17
+    61 |    61000 |      59.57 |       361 |       170
+    62 |    62000 |      69.98 |       361 |       173
+    63 |    63000 |      67.28 |       363 |       175
+    64 |    64000 |      67.50 |       362 |       178
+    65 |    65000 |      69.45 |       320 |       181
+    66 |    66000 |      78.67 |       361 |       184
+    67 |    67000 |      87.17 |       363 |       187
+    68 |    68000 |      96.64 |       361 |       190
+    69 |    69000 |     102.16 |       361 |       192
+    70 |    70000 |     114.23 |       361 |       195
+    71 |    71000 |     123.58 |       363 |       198
+    72 |    72000 |     132.85 |       363 |       201
+    73 |    73000 |     139.24 |       364 |       203
+    74 |    74000 |     141.32 |       364 |       206
+    75 |    75000 |     133.38 |       364 |       209
+    76 |    76000 |      99.31 |       366 |       212
+    77 |    77000 |      68.20 |       364 |       214
+    78 |    78000 |      65.78 |       359 |       217
+    79 |    79000 |      64.54 |       362 |       220
+    80 |    80000 |      69.61 |       363 |       223
+  [Evolution] Iter 80 | nagrada≈500
+    81 |    81000 |      77.91 |       364 |       227
+    82 |    82000 |      85.49 |       364 |       230
+    83 |    83000 |      93.78 |       364 |       232
+    84 |    84000 |     103.53 |       360 |       235
+    85 |    85000 |     107.05 |       363 |       238
+    86 |    86000 |     118.47 |       361 |       241
+    87 |    87000 |     122.61 |       360 |       243
+    88 |    88000 |     132.09 |       360 |       246
+    89 |    89000 |     140.63 |       360 |       249
+    90 |    90000 |     149.38 |       362 |       252
+    91 |    91000 |     155.32 |       358 |       254
+    92 |    92000 |     163.33 |       362 |       257
+    93 |    93000 |     170.76 |       364 |       260
+    94 |    94000 |     177.65 |       363 |       263
+    95 |    95000 |     180.06 |       361 |       265
+    96 |    96000 |     189.42 |       362 |       268
+    97 |    97000 |     198.14 |       363 |       271
+    98 |    98000 |     204.54 |       363 |       274
+    99 |    99000 |     204.97 |       319 |       277
+   100 |   100000 |     213.73 |       362 |       280
+  [Evolution] Iter 100 | nagrada≈142
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w2
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=2): nagrada=132
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w2_trained.gif  (132 frejmova, 130 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w2_evolution.gif  (1211 frejmova, 1080 KB)
+
+Ukupno prikupljenih koraka: 100,000
+Prosečni throughput: 371 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/dqn_CartPole-v1_w2.json
+
+>>> Evaluacija (10 epizoda) | dqn_w2
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w2
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     150.00
+       2 |     146.00
+       3 |     132.00
+       4 |     149.00
+       5 |     134.00
+       6 |     144.00
+       7 |     126.00
+       8 |     131.00
+       9 |     128.00
+      10 |     160.00
+
+────────────────────────────────────────
+  Prosek:  140.00  ±  10.74  (std)
+  Min:     126.00
+  Max:     160.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w2_best.gif  (160 frejmova, 155 KB)
+  Best epizoda (160) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w2_best.gif
+  dqn_w2: mean=140.00 ± 10.74
+
+>>> DQN | env_runners=4 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       4  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        32  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.01 za 50000 koraka
+  TargetUpdate:     svaka 500 grad. koraka
+  n_step:           3
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.0005
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 1. iteracija
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=14
+     1 |     1008 |      23.17 |      1971 |         4
+     2 |     2016 |      21.84 |       594 |         6
+     3 |     3024 |      21.32 |       615 |         7
+     4 |     4032 |      26.52 |       623 |         9
+     5 |     5040 |      31.44 |       614 |        10
+     6 |     6048 |      40.64 |       589 |        12
+     7 |     7056 |      48.98 |       590 |        14
+     8 |     8064 |      55.79 |       590 |        16
+     9 |     9072 |      64.61 |       571 |        17
+    10 |    10080 |      71.67 |       598 |        19
+    11 |    11088 |      81.36 |       618 |        21
+    12 |    12096 |      87.88 |       628 |        22
+    13 |    13104 |      94.82 |       618 |        24
+    14 |    14112 |      99.67 |       569 |        26
+    15 |    15120 |     107.30 |       568 |        27
+    16 |    16128 |     112.32 |       569 |        29
+    17 |    17136 |     112.89 |       589 |        31
+    18 |    18144 |     114.51 |       598 |        33
+    19 |    19152 |     121.71 |       601 |        34
+    20 |    20160 |     127.07 |       594 |        36
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 20 | nagrada≈114
+    21 |    21168 |     116.67 |       596 |        38
+    22 |    22176 |     115.03 |       614 |        40
+    23 |    23184 |     119.03 |       609 |        41
+    24 |    24192 |     120.17 |       617 |        43
+    25 |    25200 |     117.77 |       619 |        45
+    26 |    26208 |     114.12 |       626 |        46
+    27 |    27216 |     107.65 |       624 |        48
+    28 |    28224 |      96.52 |       423 |        50
+    29 |    29232 |      87.09 |       587 |        52
+    30 |    30240 |      89.80 |       573 |        54
+    31 |    31248 |      92.75 |       569 |        55
+    32 |    32256 |     101.61 |       593 |        57
+    33 |    33264 |      97.00 |       602 |        59
+    34 |    34272 |      97.73 |       614 |        60
+    35 |    35280 |      97.48 |       609 |        62
+    36 |    36288 |      94.96 |       616 |        64
+    37 |    37296 |      95.82 |       614 |        65
+    38 |    38304 |      98.70 |       611 |        67
+    39 |    39312 |     104.41 |       618 |        69
+    40 |    40320 |     108.55 |       617 |        70
+  [Evolution] Iter 40 | nagrada≈366
+    41 |    41328 |     108.76 |       615 |        73
+    42 |    42336 |     115.12 |       620 |        74
+    43 |    43344 |     115.50 |       613 |        76
+    44 |    44352 |     113.19 |       608 |        78
+    45 |    45360 |     118.56 |       615 |        79
+    46 |    46368 |     119.32 |       613 |        81
+    47 |    47376 |     124.17 |       613 |        83
+    48 |    48384 |     128.31 |       619 |        84
+    49 |    49392 |     141.81 |       598 |        86
+    50 |    50400 |     149.38 |       604 |        88
+    51 |    51408 |     152.39 |       608 |        89
+    52 |    52416 |     158.12 |       591 |        91
+    53 |    53424 |     158.89 |       593 |        93
+    54 |    54432 |     163.22 |       585 |        94
+    55 |    55440 |     165.10 |       600 |        96
+    56 |    56448 |     162.95 |       497 |        98
+    57 |    57456 |     165.49 |       594 |       100
+    58 |    58464 |     168.75 |       573 |       102
+    59 |    59472 |     160.67 |       564 |       103
+    60 |    60480 |     165.22 |       591 |       105
+  [Evolution] Iter 60 | nagrada≈140
+    61 |    61488 |     158.61 |       584 |       107
+    62 |    62496 |     128.56 |       586 |       109
+    63 |    63504 |     121.20 |       601 |       111
+    64 |    64512 |     116.02 |       584 |       112
+    65 |    65520 |     117.89 |       579 |       114
+    66 |    66528 |     121.38 |       583 |       116
+    67 |    67536 |     125.27 |       600 |       117
+    68 |    68544 |     134.74 |       605 |       119
+    69 |    69552 |     137.20 |       607 |       121
+    70 |    70560 |     146.69 |       610 |       122
+    71 |    71568 |     149.97 |       568 |       124
+    72 |    72576 |     160.80 |       595 |       126
+    73 |    73584 |     166.25 |       556 |       128
+    74 |    74592 |     173.26 |       574 |       130
+    75 |    75600 |     182.77 |       580 |       131
+    76 |    76608 |     177.71 |       592 |       133
+    77 |    77616 |     185.13 |       577 |       135
+    78 |    78624 |     189.06 |       565 |       136
+    79 |    79632 |     198.46 |       554 |       138
+    80 |    80640 |     195.27 |       553 |       140
+  [Evolution] Iter 80 | nagrada≈129
+    81 |    81648 |     195.27 |       557 |       142
+    82 |    82656 |     211.02 |       568 |       144
+    83 |    83664 |     219.62 |       567 |       146
+    84 |    84672 |     225.77 |       610 |       147
+    85 |    85680 |     229.04 |       607 |       149
+    86 |    86688 |     232.42 |       603 |       151
+    87 |    87696 |     235.46 |       597 |       153
+    88 |    88704 |     244.34 |       588 |       154
+    89 |    89712 |     134.02 |       594 |       156
+    90 |    90720 |     105.59 |       485 |       158
+    91 |    91728 |     112.11 |       591 |       160
+    92 |    92736 |     121.29 |       592 |       161
+    93 |    93744 |     113.28 |       600 |       163
+    94 |    94752 |     112.86 |       603 |       165
+    95 |    95760 |     116.69 |       594 |       166
+    96 |    96768 |     122.96 |       604 |       168
+    97 |    97776 |     132.38 |       591 |       170
+    98 |    98784 |     134.62 |       583 |       172
+    99 |    99792 |     136.95 |       597 |       173
+   100 |   100800 |     148.31 |       607 |       175
+  [Evolution] Iter 100 | nagrada≈18
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w4
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=4): nagrada=21
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w4_trained.gif  (21 frejmova, 17 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w4_evolution.gif  (875 frejmova, 993 KB)
+
+Ukupno prikupljenih koraka: 100,800
+Prosečni throughput: 606 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/dqn_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | dqn_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |      19.00
+       2 |      21.00
+       3 |      17.00
+       4 |      18.00
+       5 |      21.00
+       6 |      21.00
+       7 |      20.00
+       8 |      17.00
+       9 |      19.00
+      10 |      21.00
+
+────────────────────────────────────────
+  Prosek:  19.40  ±  1.56  (std)
+  Min:     17.00
+  Max:     21.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w4_best.gif  (21 frejmova, 17 KB)
+  Best epizoda (21) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w4_best.gif
+  dqn_w4: mean=19.40 ± 1.56
+
+>>> DQN | env_runners=8 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       8  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        32  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.01 za 50000 koraka
+  TargetUpdate:     svaka 500 grad. koraka
+  n_step:           3
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.0005
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 1. iteracija
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=45
+     1 |     1024 |      25.18 |      2416 |         4
+     2 |     2048 |      22.39 |       905 |         5
+     3 |     3072 |      17.41 |       912 |         6
+     4 |     4096 |      14.62 |       907 |         7
+     5 |     5120 |      18.12 |       910 |         9
+     6 |     6144 |      21.54 |       926 |        10
+     7 |     7168 |      30.45 |       918 |        11
+     8 |     8192 |      38.02 |       906 |        12
+     9 |     9216 |      45.58 |       918 |        13
+    10 |    10240 |      48.55 |       923 |        14
+    11 |    11264 |      62.21 |       907 |        15
+    12 |    12288 |      72.48 |       909 |        16
+    13 |    13312 |      84.13 |       907 |        18
+    14 |    14336 |      91.41 |       918 |        19
+    15 |    15360 |     100.21 |       947 |        20
+    16 |    16384 |     110.54 |       929 |        21
+    17 |    17408 |     115.99 |       913 |        22
+    18 |    18432 |     120.99 |       920 |        23
+    19 |    19456 |     130.27 |       934 |        24
+    20 |    20480 |     144.24 |       910 |        25
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 20 | nagrada≈315
+    21 |    21504 |     147.27 |       562 |        28
+    22 |    22528 |     148.17 |       903 |        29
+    23 |    23552 |     152.72 |       904 |        30
+    24 |    24576 |     154.06 |       913 |        31
+    25 |    25600 |     150.37 |       897 |        33
+    26 |    26624 |     149.41 |       896 |        34
+    27 |    27648 |     147.30 |       903 |        35
+    28 |    28672 |     147.55 |       907 |        36
+    29 |    29696 |     151.30 |       910 |        37
+    30 |    30720 |     154.70 |       903 |        38
+    31 |    31744 |     156.64 |       899 |        39
+    32 |    32768 |     158.49 |       897 |        40
+    33 |    33792 |     163.11 |       887 |        42
+    34 |    34816 |     161.73 |       906 |        43
+    35 |    35840 |     152.78 |       903 |        44
+    36 |    36864 |     157.04 |       912 |        45
+    37 |    37888 |     163.30 |       908 |        46
+    38 |    38912 |     163.39 |       919 |        47
+    39 |    39936 |     168.06 |       908 |        48
+    40 |    40960 |     170.97 |       917 |        50
+  [Evolution] Iter 40 | nagrada≈370
+    41 |    41984 |     175.59 |       912 |        52
+    42 |    43008 |     178.81 |       909 |        53
+    43 |    44032 |     180.18 |       907 |        54
+    44 |    45056 |     180.96 |       908 |        55
+    45 |    46080 |     183.47 |       897 |        56
+    46 |    47104 |     184.59 |       695 |        58
+    47 |    48128 |     183.71 |       905 |        59
+    48 |    49152 |     192.25 |       894 |        60
+    49 |    50176 |     191.79 |       900 |        61
+    50 |    51200 |     190.56 |       905 |        62
+    51 |    52224 |     188.47 |       914 |        63
+    52 |    53248 |     193.73 |       907 |        64
+    53 |    54272 |     194.89 |       896 |        66
+    54 |    55296 |     200.92 |       903 |        67
+    55 |    56320 |     202.55 |       897 |        68
+    56 |    57344 |     201.05 |       912 |        69
+    57 |    58368 |     202.94 |       920 |        70
+    58 |    59392 |     207.72 |       898 |        71
+    59 |    60416 |     212.47 |       909 |        72
+    60 |    61440 |     215.47 |       916 |        73
+  [Evolution] Iter 60 | nagrada≈308
+    61 |    62464 |     212.60 |       889 |        75
+    62 |    63488 |     212.89 |       914 |        77
+    63 |    64512 |     212.09 |       924 |        78
+    64 |    65536 |     217.79 |       915 |        79
+    65 |    66560 |     218.71 |       919 |        80
+    66 |    67584 |     220.75 |       908 |        81
+    67 |    68608 |     221.86 |       910 |        82
+    68 |    69632 |     224.62 |       912 |        83
+    69 |    70656 |     229.76 |       913 |        84
+    70 |    71680 |     227.56 |       889 |        86
+    71 |    72704 |     227.17 |       894 |        87
+    72 |    73728 |     229.24 |       882 |        88
+    73 |    74752 |     232.35 |       892 |        89
+    74 |    75776 |     235.85 |       884 |        90
+    75 |    76800 |     235.32 |       883 |        91
+    76 |    77824 |     227.25 |       915 |        92
+    77 |    78848 |     227.25 |       899 |        94
+    78 |    79872 |     227.25 |       905 |        95
+    79 |    80896 |     230.41 |       889 |        96
+    80 |    81920 |     248.02 |       883 |        97
+  [Evolution] Iter 80 | nagrada≈500
+    81 |    82944 |     248.02 |       893 |       100
+    82 |    83968 |     248.76 |       895 |       101
+    83 |    84992 |     252.55 |       908 |       102
+    84 |    86016 |     259.66 |       923 |       103
+    85 |    87040 |     259.66 |       907 |       104
+    86 |    88064 |     262.01 |       887 |       106
+    87 |    89088 |     263.49 |       888 |       107
+    88 |    90112 |     243.47 |       891 |       108
+    89 |    91136 |     241.13 |       893 |       109
+    90 |    92160 |     241.36 |       899 |       110
+    91 |    93184 |     241.36 |       898 |       111
+    92 |    94208 |     220.55 |       900 |       112
+    93 |    95232 |     216.78 |       895 |       114
+    94 |    96256 |     215.20 |       891 |       115
+    95 |    97280 |     209.14 |       896 |       116
+    96 |    98304 |     134.76 |       874 |       117
+    97 |    99328 |      98.86 |       887 |       118
+    98 |   100352 |     104.28 |       887 |       119
+    99 |   101376 |      84.36 |       899 |       120
+   100 |   102400 |      84.45 |       909 |       122
+  [Evolution] Iter 100 | nagrada≈500
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w8
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=8): nagrada=500
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w8_trained.gif  (500 frejmova, 409 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w8_evolution.gif  (2610 frejmova, 2735 KB)
+
+Ukupno prikupljenih koraka: 102,400
+Prosečni throughput: 914 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/dqn_CartPole-v1_w8.json
+
+>>> Evaluacija (10 epizoda) | dqn_w8
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w8
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w8_best.gif  (500 frejmova, 421 KB)
+  Best epizoda (500) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w8_best.gif
+  dqn_w8: mean=500.00 ± 0.00
+
+>>> DQN | env_runners=16 | CartPole-v1
+Lokalni Ray klaster podignut.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       16  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        32  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.01 za 50000 koraka
+  TargetUpdate:     svaka 500 grad. koraka
+  n_step:           3
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.0005
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 1. iteracija
+  GIF-ovi:          /home/ubuntu/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=12
+     1 |     1024 |      18.69 |      2632 |         6
+     2 |     2048 |      20.43 |      1204 |         7
+     3 |     3072 |      18.09 |      1203 |         7
+     4 |     4096 |      15.19 |      1214 |         8
+     5 |     5120 |      12.84 |      1199 |         9
+     6 |     6144 |      12.53 |      1225 |        10
+     7 |     7168 |      14.45 |      1212 |        11
+     8 |     8192 |      17.21 |       698 |        12
+     9 |     9216 |      18.18 |      1207 |        13
+    10 |    10240 |      21.51 |      1219 |        14
+    11 |    11264 |      25.54 |      1197 |        15
+    12 |    12288 |      31.62 |      1192 |        16
+    13 |    13312 |      35.75 |      1216 |        17
+    14 |    14336 |      37.04 |      1198 |        17
+    15 |    15360 |      39.78 |      1204 |        18
+    16 |    16384 |      44.39 |      1217 |        19
+    17 |    17408 |      46.77 |      1207 |        20
+    18 |    18432 |      51.13 |      1203 |        21
+    19 |    19456 |      51.15 |      1211 |        22
+    20 |    20480 |      64.83 |      1216 |        22
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 20 | nagrada≈29
+    21 |    21504 |      64.73 |      1197 |        23
+    22 |    22528 |      72.93 |      1219 |        24
+    23 |    23552 |      74.22 |      1221 |        25
+    24 |    24576 |      75.47 |      1211 |        26
+    25 |    25600 |      80.74 |      1198 |        27
+    26 |    26624 |      93.88 |      1211 |        28
+    27 |    27648 |      99.49 |      1194 |        29
+    28 |    28672 |     112.84 |      1211 |        29
+    29 |    29696 |     119.85 |      1195 |        30
+    30 |    30720 |     125.11 |       899 |        31
+    31 |    31744 |     129.08 |      1218 |        32
+    32 |    32768 |     135.84 |      1216 |        33
+    33 |    33792 |     138.56 |      1197 |        34
+    34 |    34816 |     148.95 |      1219 |        35
+    35 |    35840 |     152.87 |      1205 |        36
+    36 |    36864 |     159.25 |      1204 |        36
+    37 |    37888 |     163.32 |      1200 |        37
+    38 |    38912 |     171.52 |      1209 |        38
+    39 |    39936 |     175.49 |      1203 |        39
+    40 |    40960 |     180.37 |      1217 |        40
+  [Evolution] Iter 40 | nagrada≈211
+    41 |    41984 |     183.93 |      1219 |        41
+    42 |    43008 |     186.57 |      1207 |        42
+    43 |    44032 |     182.80 |      1204 |        43
+    44 |    45056 |     180.83 |      1210 |        44
+    45 |    46080 |     180.21 |      1219 |        45
+    46 |    47104 |     178.94 |      1220 |        45
+    47 |    48128 |     184.32 |      1218 |        46
+    48 |    49152 |     186.07 |      1213 |        47
+    49 |    50176 |     191.52 |      1217 |        48
+    50 |    51200 |     188.79 |      1198 |        49
+    51 |    52224 |     183.83 |      1182 |        50
+    52 |    53248 |     183.13 |      1201 |        51
+    53 |    54272 |     180.83 |      1208 |        51
+    54 |    55296 |     179.05 |      1201 |        52
+    55 |    56320 |     182.76 |      1206 |        53
+    56 |    57344 |     185.49 |       863 |        54
+    57 |    58368 |     188.61 |      1185 |        55
+    58 |    59392 |     193.00 |      1193 |        56
+    59 |    60416 |     196.80 |      1200 |        57
+    60 |    61440 |     197.05 |      1195 |        58
+  [Evolution] Iter 60 | nagrada≈500
+    61 |    62464 |     199.92 |      1199 |        60
+    62 |    63488 |     202.78 |      1203 |        61
+    63 |    64512 |     204.44 |      1210 |        62
+    64 |    65536 |     208.45 |      1206 |        62
+    65 |    66560 |     219.96 |      1196 |        63
+    66 |    67584 |     227.86 |      1188 |        64
+    67 |    68608 |     229.62 |      1204 |        65
+    68 |    69632 |     227.22 |      1212 |        66
+    69 |    70656 |     227.01 |      1196 |        67
+    70 |    71680 |     225.44 |      1225 |        68
+    71 |    72704 |     228.09 |      1182 |        68
+    72 |    73728 |     234.57 |      1206 |        69
+    73 |    74752 |     241.38 |      1198 |        70
+    74 |    75776 |     241.38 |      1210 |        71
+    75 |    76800 |     246.85 |      1192 |        72
+    76 |    77824 |     247.32 |      1197 |        73
+    77 |    78848 |     249.36 |      1194 |        74
+    78 |    79872 |     251.29 |      1196 |        74
+    79 |    80896 |     256.02 |      1186 |        75
+    80 |    81920 |     259.75 |      1194 |        76
+  [Evolution] Iter 80 | nagrada≈168
+    81 |    82944 |     257.67 |      1205 |        77
+    82 |    83968 |     247.10 |      1202 |        78
+    83 |    84992 |     247.67 |      1198 |        79
+    84 |    86016 |     239.93 |      1197 |        80
+    85 |    87040 |     218.64 |      1199 |        81
+    86 |    88064 |     208.31 |      1201 |        82
+    87 |    89088 |     205.38 |      1195 |        83
+    88 |    90112 |     207.58 |       842 |        84
+    89 |    91136 |     206.42 |      1188 |        85
+    90 |    92160 |     189.58 |      1198 |        85
+    91 |    93184 |     191.04 |      1207 |        86
+    92 |    94208 |     184.10 |      1191 |        87
+    93 |    95232 |     185.68 |      1205 |        88
+    94 |    96256 |     186.20 |      1218 |        89
+    95 |    97280 |     182.59 |      1193 |        90
+    96 |    98304 |     178.40 |      1189 |        91
+    97 |    99328 |     179.23 |      1203 |        91
+    98 |   100352 |     176.94 |      1204 |        92
+    99 |   101376 |     179.28 |      1213 |        93
+   100 |   102400 |     182.03 |      1185 |        94
+  [Evolution] Iter 100 | nagrada≈175
+
+  Checkpoint sačuvan: /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w16
+
+  Generiše GIF-ove → /home/ubuntu/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=16): nagrada=176
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w16_trained.gif  (176 frejmova, 164 KB)
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w16_evolution.gif  (1356 frejmova, 1269 KB)
+
+Ukupno prikupljenih koraka: 102,400
+Prosečni throughput: 1203 koraka/sec
+Metrike: /home/ubuntu/master-rad/results/dqn_CartPole-v1_w16.json
+
+>>> Evaluacija (10 epizoda) | dqn_w16
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/ubuntu/master-rad/results/checkpoints/dqn_cartpole_w16
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     181.00
+       2 |     187.00
+       3 |     188.00
+       4 |     179.00
+       5 |     185.00
+       6 |     184.00
+       7 |     176.00
+       8 |     203.00
+       9 |     181.00
+      10 |     180.00
+
+────────────────────────────────────────
+  Prosek:  184.40  ±  7.13  (std)
+  Min:     176.00
+  Max:     203.00
+────────────────────────────────────────
+
+  GIF: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w16_best.gif  (203 frejmova, 185 KB)
+  Best epizoda (203) sačuvana: /home/ubuntu/master-rad/results/gifs/cartpole/dqn_w16_best.gif
+  dqn_w16: mean=184.40 ± 7.13
+
+Summary: /home/ubuntu/master-rad/results/summary_cartpole.json
+
+  --- Rezultati: CartPole-v1 ---
+  Framework              Workers   Duration   Best Rwd   Steps/s      Eval mean±std
+  ----------------------------------------------------------------------------------
+  ray_rllib                    0     155.0s      452.2       550   500.00 ± 0.00   
+  ray_rllib                    1     143.1s      465.7       546   500.00 ± 0.00   
+  ray_rllib                    2     107.4s      462.4       697   500.00 ± 0.00   
+  ray_rllib                    4      88.1s      462.9       812   500.00 ± 0.00   
+  ray_rllib                    8      86.5s      452.7       879   500.00 ± 0.00   
+  ray_rllib                   16      97.0s      454.7       884   500.00 ± 0.00   
+  appo                         1     281.1s      296.1      1165   326.70 ± 88.47  
+  appo                         1     280.8s      295.9      1166   403.00 ± 92.79  
+  appo                         2     143.1s      261.3      2338   414.50 ± 67.36  
+  appo                         4      79.1s      233.5      4398   500.00 ± 0.00   
+  appo                         8      52.8s      267.0      6934   497.70 ± 6.90   
+  appo                        16      46.1s      204.9      8556   213.60 ± 70.09  
+  dqn                          1     495.7s      295.7       208   105.10 ± 2.95   
+  dqn                          2     280.1s      213.7       371   140.00 ± 10.74  
+  dqn                          4     175.0s      244.3       606    19.40 ± 1.56   
+  dqn                          8     122.9s      263.5       914   500.00 ± 0.00   
+  dqn                         16      94.5s      259.8      1203   184.40 ± 7.13   
+
+  Speedup PPO (baseline = w=0):
+    w= 0: speedup=1.00x  efikasnost=N/A  thr_speedup=1.00x
+    w= 1: speedup=1.08x  efikasnost=N/A  thr_speedup=0.99x
+    w= 2: speedup=1.44x  efikasnost=N/A  thr_speedup=1.27x
+    w= 4: speedup=1.76x  efikasnost=N/A  thr_speedup=1.48x
+    w= 8: speedup=1.79x  efikasnost=N/A  thr_speedup=1.60x
+    w=16: speedup=1.60x  efikasnost=N/A  thr_speedup=1.61x
+
+  Speedup APPO (baseline = w=1):
+    w= 1: speedup=1.00x  efikasnost=1.00  thr_speedup=1.00x
+    w= 1: speedup=1.00x  efikasnost=1.00  thr_speedup=1.00x
+    w= 2: speedup=1.96x  efikasnost=0.98  thr_speedup=2.01x
+    w= 4: speedup=3.55x  efikasnost=0.89  thr_speedup=3.78x
+    w= 8: speedup=5.32x  efikasnost=0.67  thr_speedup=5.95x
+    w=16: speedup=6.09x  efikasnost=0.38  thr_speedup=7.35x
+
+  Speedup DQN (baseline = w=1):
+    w= 1: speedup=1.00x  efikasnost=1.00  thr_speedup=1.00x
+    w= 2: speedup=1.77x  efikasnost=0.88  thr_speedup=1.79x
+    w= 4: speedup=2.83x  efikasnost=0.71  thr_speedup=2.91x
+    w= 8: speedup=4.03x  efikasnost=0.50  thr_speedup=4.40x
+    w=16: speedup=5.25x  efikasnost=0.33  thr_speedup=5.79x
+
+  [monitor] sažetak:
+fajl:        /home/ubuntu/master-rad/results/monitor_cartpole_ppo_appo_dqn_20260821_180134.csv
+uzoraka:     1725
+trajanje:    3449s
+CPU mean:    12.2%
+CPU max:     99.5%
+RAM mean:    22.8%  (7.15 GB)
+RAM max:     44.1%  (13.81 GB)
+vCPU:        16
+  [monitor] sažetak sačuvan: /home/ubuntu/master-rad/results/monitor_cartpole_ppo_appo_dqn_20260821_180134.summary.txt

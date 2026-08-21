@@ -43,7 +43,7 @@ available_node_types:
     ray_head_default:
         resources: {}
         node_config:
-            machineType: c2d-highcpu-16   # 16 vCPU, 32 GB — C3 nema 16; highcpu dovoljan RAM
+            machineType: c3d-highcpu-16   # 16 vCPU, 32 GB — C3 nema 16; highcpu dovoljan RAM
             disks:
                 - boot: true
                   autoDelete: true

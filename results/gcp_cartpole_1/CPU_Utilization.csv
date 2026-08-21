@@ -1,0 +1,61 @@
+TimeSeries ID,instance/cpu/utilization.gce_instance.ALIGN_MEAN.metric.type="compute.googleapis.com/instance/cpu/utilization" resource.type="gce_instance" resource.labels."instance_id"="4219607549443653628" resource.labels."zone"="us-central1-a" AND resource.labels."project_id"="master-rad-501412".60s.instance_id:4219607549443653628.project_id:master-rad-501412.zone:us-central1-a.instance_name:ray-master-rad-lunarlander-head-c5c4b849-compute
+instance_name,ray-master-rad-lunarlander-head-c5c4b849-compute
+zone,us-central1-a
+project_id,master-rad-501412
+instance_id,4219607549443653628
+Fri Aug 21 2026 18:48:00 GMT+0200 (Central European Summer Time),0.024927506826165798
+Fri Aug 21 2026 18:49:00 GMT+0200 (Central European Summer Time),0.028419766790486984
+Fri Aug 21 2026 18:50:00 GMT+0200 (Central European Summer Time),0.02184672883750975
+Fri Aug 21 2026 18:51:00 GMT+0200 (Central European Summer Time),0.03959070297932074
+Fri Aug 21 2026 18:52:00 GMT+0200 (Central European Summer Time),0.03991336394436747
+Fri Aug 21 2026 18:53:00 GMT+0200 (Central European Summer Time),0.004219170278759776
+Fri Aug 21 2026 18:54:00 GMT+0200 (Central European Summer Time),0.01121878985718654
+Fri Aug 21 2026 18:55:00 GMT+0200 (Central European Summer Time),0.05322933945476436
+Fri Aug 21 2026 18:56:00 GMT+0200 (Central European Summer Time),0.07148127086706528
+Fri Aug 21 2026 18:57:00 GMT+0200 (Central European Summer Time),0.07134598114341148
+Fri Aug 21 2026 18:58:00 GMT+0200 (Central European Summer Time),0.07137975731076118
+Fri Aug 21 2026 18:59:00 GMT+0200 (Central European Summer Time),0.07115237332305728
+Fri Aug 21 2026 19:00:00 GMT+0200 (Central European Summer Time),0.07503308624031539
+Fri Aug 21 2026 19:01:00 GMT+0200 (Central European Summer Time),0.09002383988750869
+Fri Aug 21 2026 19:02:00 GMT+0200 (Central European Summer Time),0.08789570988269506
+Fri Aug 21 2026 19:03:00 GMT+0200 (Central European Summer Time),0.09495408035427708
+Fri Aug 21 2026 19:04:00 GMT+0200 (Central European Summer Time),0.10335322615792263
+Fri Aug 21 2026 19:05:00 GMT+0200 (Central European Summer Time),0.10693609786898339
+Fri Aug 21 2026 19:06:00 GMT+0200 (Central European Summer Time),0.11882696317296369
+Fri Aug 21 2026 19:07:00 GMT+0200 (Central European Summer Time),0.15525135640402113
+Fri Aug 21 2026 19:08:00 GMT+0200 (Central European Summer Time),0.13968304077420843
+Fri Aug 21 2026 19:09:00 GMT+0200 (Central European Summer Time),0.10390219228570031
+Fri Aug 21 2026 19:10:00 GMT+0200 (Central European Summer Time),0.10873501376218092
+Fri Aug 21 2026 19:11:00 GMT+0200 (Central European Summer Time),0.11220792316155723
+Fri Aug 21 2026 19:12:00 GMT+0200 (Central European Summer Time),0.11207528116235466
+Fri Aug 21 2026 19:13:00 GMT+0200 (Central European Summer Time),0.11058883837276122
+Fri Aug 21 2026 19:14:00 GMT+0200 (Central European Summer Time),0.09499489965842779
+Fri Aug 21 2026 19:15:00 GMT+0200 (Central European Summer Time),0.08876895651680716
+Fri Aug 21 2026 19:16:00 GMT+0200 (Central European Summer Time),0.11290645869042919
+Fri Aug 21 2026 19:17:00 GMT+0200 (Central European Summer Time),0.11254138711357674
+Fri Aug 21 2026 19:18:00 GMT+0200 (Central European Summer Time),0.11317861599586033
+Fri Aug 21 2026 19:19:00 GMT+0200 (Central European Summer Time),0.10452639758741687
+Fri Aug 21 2026 19:20:00 GMT+0200 (Central European Summer Time),0.09288270827528891
+Fri Aug 21 2026 19:21:00 GMT+0200 (Central European Summer Time),0.15785757684557686
+Fri Aug 21 2026 19:22:00 GMT+0200 (Central European Summer Time),0.1669948647401057
+Fri Aug 21 2026 19:23:00 GMT+0200 (Central European Summer Time),0.14050068702327867
+Fri Aug 21 2026 19:24:00 GMT+0200 (Central European Summer Time),0.19260011589208878
+Fri Aug 21 2026 19:25:00 GMT+0200 (Central European Summer Time),0.24270529480140793
+Fri Aug 21 2026 19:26:00 GMT+0200 (Central European Summer Time),0.2200376371366218
+Fri Aug 21 2026 19:27:00 GMT+0200 (Central European Summer Time),0.33469878631964983
+Fri Aug 21 2026 19:28:00 GMT+0200 (Central European Summer Time),0.38082926348754187
+Fri Aug 21 2026 19:29:00 GMT+0200 (Central European Summer Time),0.2337663255794458
+Fri Aug 21 2026 19:30:00 GMT+0200 (Central European Summer Time),0.0761992555218427
+Fri Aug 21 2026 19:31:00 GMT+0200 (Central European Summer Time),0.07853703445997363
+Fri Aug 21 2026 19:32:00 GMT+0200 (Central European Summer Time),0.07835944837376967
+Fri Aug 21 2026 19:33:00 GMT+0200 (Central European Summer Time),0.07825332528760498
+Fri Aug 21 2026 19:34:00 GMT+0200 (Central European Summer Time),0.07814521887981224
+Fri Aug 21 2026 19:35:00 GMT+0200 (Central European Summer Time),0.07791652258824039
+Fri Aug 21 2026 19:36:00 GMT+0200 (Central European Summer Time),0.0778022375096081
+Fri Aug 21 2026 19:37:00 GMT+0200 (Central European Summer Time),0.07873009220999165
+Fri Aug 21 2026 19:38:00 GMT+0200 (Central European Summer Time),0.08584498469362814
+Fri Aug 21 2026 19:39:00 GMT+0200 (Central European Summer Time),0.10142964036274596
+Fri Aug 21 2026 19:40:00 GMT+0200 (Central European Summer Time),0.10096360437840511
+Fri Aug 21 2026 19:41:00 GMT+0200 (Central European Summer Time),0.10088624928456795
+Fri Aug 21 2026 19:42:00 GMT+0200 (Central European Summer Time),0.09688539052352306
+Fri Aug 21 2026 19:43:00 GMT+0200 (Central European Summer Time),0.08575782755392064
