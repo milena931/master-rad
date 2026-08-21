@@ -1,0 +1,8 @@
+fajl:        /home/ubuntu/master-rad/results/monitor_cartpole_appo_dqn_20260821_201634.csv
+uzoraka:     325
+trajanje:    648s
+CPU mean:    17.1%
+CPU max:     53.1%
+RAM mean:    27.6%  (8.66 GB)
+RAM max:     35.5%  (11.13 GB)
+vCPU:        16
