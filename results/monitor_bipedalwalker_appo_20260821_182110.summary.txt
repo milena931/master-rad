@@ -1,0 +1,8 @@
+fajl:        /home/milena/Documents/etf/master/master-rad/results/monitor_bipedalwalker_appo_20260821_182110.csv
+uzoraka:     133
+trajanje:    264s
+CPU mean:    69.2%
+CPU max:     88.7%
+RAM mean:    63.2%  (9.74 GB)
+RAM max:     67.3%  (10.36 GB)
+vCPU:        8

@@ -23,7 +23,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
+import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Osigurava line-buffering kada se skripta pokreće kroz pipe (npr. | tee)
@@ -62,6 +65,8 @@ def run_all_experiments(
     evaluate_episodes: int = 0,
     algorithms: list[str] | None = None,
     max_iterations_override: int | None = None,
+    monitor: bool = False,
+    monitor_interval: float = 2.0,
 ) -> dict[str, list[dict]]:
     """
     Pokreće eksperimente za sve tražene envove.
@@ -73,6 +78,7 @@ def run_all_experiments(
     evaluate_episodes — ako > 0, posle svakog treninga pokrene N epizoda za mean ± std.
     max_iterations_override — ako je dato, prepisuje max_iterations iz config-a za sve envove.
                        Korisno za brze testove: --max-iterations 30.
+    monitor          — ako True, u pozadini snima CPU/RAM u results/monitor_*.csv.
     """
     cfg = load_config(config_path)
     workers = worker_counts or cfg["worker_counts"]
@@ -82,6 +88,7 @@ def run_all_experiments(
     dqn_defaults = cfg.get("dqn_defaults", {})
     run_algos = algorithms or ["ppo"]
     all_results: dict[str, list[dict]] = {}
+    monitor_proc: subprocess.Popen | None = None
 
     print(f"\n{'#'*65}")
     print(f"  MASTER RAD — {'SCALING STUDY' if scaling_only else 'SKALABILNOST EKSPERIMENTI'}")
@@ -97,210 +104,255 @@ def run_all_experiments(
         print(f"  Ray:       {ray_address}  (GCP)")
     else:
         print("  Ray:       lokalni klaster")
+    if monitor:
+        print("  Monitor:   CPU/RAM CSV u output dir")
     print(f"{'#'*65}")
 
-    for env_key in env_keys:
-        if env_key not in cfg["environments"]:
-            print(f"\n[UPOZORENJE] Okruženje '{env_key}' nije u config-u, preskačem.")
-            continue
+    if monitor:
+        monitor_proc = _start_monitor(
+            output_dir, env_keys, run_algos, interval=monitor_interval
+        )
 
-        env_cfg = cfg["environments"][env_key]
-        env_id = env_cfg["id"]
-        gif_dir = output_dir / "gifs" / env_key if generate_gifs else None
+    try:
+        for env_key in env_keys:
+            if env_key not in cfg["environments"]:
+                print(f"\n[UPOZORENJE] Okruženje '{env_key}' nije u config-u, preskačem.")
+                continue
 
-        # Scaling-only mod: koristi kraće parametre ako postoje
-        if scaling_only and "scaling_max_iterations" in env_cfg:
-            effective_max_iter = env_cfg["scaling_max_iterations"]
-            effective_workers = worker_counts or env_cfg.get("scaling_worker_counts", workers)
-            print(f"\n  [Scaling only] {env_key}: {effective_max_iter} iteracija, workers={effective_workers}")
-        elif ray_address is None and "max_iterations_local" in env_cfg:
-            # Lokalno: koristi manji broj iteracija ako postoji
-            effective_max_iter = env_cfg["max_iterations_local"]
-            effective_workers = workers
-            total_steps = effective_max_iter * env_cfg.get("ppo_override", {}).get("train_batch_size", 4000)
-            print(f"\n  [Lokalni mod] {env_key}: {effective_max_iter} iteracija (~{total_steps/1e6:.1f}M koraka)")
-        else:
-            # GCP ili nema lokalne vrednosti: koristi puno
-            effective_max_iter = env_cfg["max_iterations"]
-            effective_workers = workers
+            env_cfg = cfg["environments"][env_key]
+            env_id = env_cfg["id"]
+            gif_dir = output_dir / "gifs" / env_key if generate_gifs else None
 
-        # Ručni override (--max-iterations flag) prepisuje sve gore
-        if max_iterations_override is not None:
-            effective_max_iter = max_iterations_override
-
-        # Merge: defaults + env-specifični override
-        ppo_params = {**ppo_defaults, **env_cfg.get("ppo_override", {})}
-
-        print(f"\n{'='*65}")
-        print(f"  Okruženje: {env_id}")
-        print(f"  {env_cfg.get('description', '')}")
-        print(f"{'='*65}")
-
-        env_results: list[dict] = []
-
-        # ── PPO run-ovi ──────────────────────────────────────────────────────
-        if "ppo" in run_algos:
-            for n_workers in effective_workers:
-                print(f"\n>>> PPO | env_runners={n_workers} | {env_id}")
-
-                ckpt_dir = str(output_dir / "checkpoints" / f"ppo_{env_key}_w{n_workers}")
-
-                run = train_ray(
-                    env_id=env_id,
-                    num_env_runners=n_workers,
-                    max_iterations=effective_max_iter,
-                    target_reward=env_cfg["target_reward"],
-                    train_batch_size=ppo_params.get("train_batch_size", ppo_defaults.get("train_batch_size", 4000)),
-                    lr=ppo_params.get("lr", 3e-4),
-                    ray_address=ray_address,
-                    output_dir=str(output_dir),
-                    gif_dir=str(gif_dir) if gif_dir else None,
-                    evolution_every=env_cfg.get("evolution_every", 10),
-                    ppo_params=ppo_params,
-                    checkpoint_dir=ckpt_dir,
-                )
-
-                run_dict = run.to_dict()
-                _run_evaluation(
-                    run_dict, run, env_id, evaluate_episodes,
-                    gif_dir, algo_tag=f"ppo_w{n_workers}",
-                    ckpt_dir=ckpt_dir,
-                )
-                env_results.append(run_dict)
-
-        # ── APPO run-ovi ─────────────────────────────────────────────────────
-        if "appo" in run_algos:
-            appo_params = {**appo_defaults, **env_cfg.get("appo_override", {})}
-            appo_max_iter = env_cfg.get("appo_max_iterations", effective_max_iter)
-
-            for n_workers in effective_workers:
-                print(f"\n>>> APPO | env_runners={n_workers} | {env_id}")
-
-                ckpt_dir = str(output_dir / "checkpoints" / f"appo_{env_key}_w{n_workers}")
-
-                run = train_appo(
-                    env_id=env_id,
-                    num_env_runners=n_workers,
-                    max_iterations=appo_max_iter,
-                    target_reward=env_cfg["target_reward"],
-                    lr=appo_params.get("lr", 3e-4),
-                    ray_address=ray_address,
-                    output_dir=str(output_dir),
-                    gif_dir=str(gif_dir) if gif_dir else None,
-                    evolution_every=env_cfg.get(
-                        "appo_evolution_every",
-                        env_cfg.get("evolution_every", 10),
-                    ),
-                    appo_params=appo_params,
-                    checkpoint_dir=ckpt_dir,
-                )
-
-                run_dict = run.to_dict()
-                _run_evaluation(
-                    run_dict, run, env_id, evaluate_episodes,
-                    gif_dir, algo_tag=f"appo_w{n_workers}",
-                    ckpt_dir=ckpt_dir,
-                )
-                env_results.append(run_dict)
-
-        # ── SAC run-ovi (samo za envove sa sac_override — kontinualne akcije) ──
-        if "sac" in run_algos:
-            if "sac_override" not in env_cfg:
-                print(f"\n  [PRESKAČEM] SAC nije konfigurisan za {env_key} (nema sac_override — koristiti za kontinualne akcije)")
+            # Scaling-only mod: koristi kraće parametre ako postoje
+            if scaling_only and "scaling_max_iterations" in env_cfg:
+                effective_max_iter = env_cfg["scaling_max_iterations"]
+                effective_workers = worker_counts or env_cfg.get("scaling_worker_counts", workers)
+                print(f"\n  [Scaling only] {env_key}: {effective_max_iter} iteracija, workers={effective_workers}")
+            elif ray_address is None and "max_iterations_local" in env_cfg:
+                # Lokalno: koristi manji broj iteracija ako postoji
+                effective_max_iter = env_cfg["max_iterations_local"]
+                effective_workers = workers
+                total_steps = effective_max_iter * env_cfg.get("ppo_override", {}).get("train_batch_size", 4000)
+                print(f"\n  [Lokalni mod] {env_key}: {effective_max_iter} iteracija (~{total_steps/1e6:.1f}M koraka)")
             else:
-                sac_params = {**sac_defaults, **env_cfg.get("sac_override", {})}
-                sac_max_iter = env_cfg.get("sac_max_iterations", effective_max_iter)
-                sac_workers = [max(w, 1) for w in effective_workers]
-                seen_sac: set[int] = set()
-                sac_workers = [w for w in sac_workers if not (w in seen_sac or seen_sac.add(w))]
+                # GCP ili nema lokalne vrednosti: koristi puno
+                effective_max_iter = env_cfg["max_iterations"]
+                effective_workers = workers
 
-                for n_workers in sac_workers:
-                    print(f"\n>>> SAC | env_runners={n_workers} | {env_id}")
+            # Ručni override (--max-iterations flag) prepisuje sve gore
+            if max_iterations_override is not None:
+                effective_max_iter = max_iterations_override
 
-                    ckpt_dir = str(output_dir / "checkpoints" / f"sac_{env_key}_w{n_workers}")
+            # Merge: defaults + env-specifični override
+            ppo_params = {**ppo_defaults, **env_cfg.get("ppo_override", {})}
 
-                    run = train_sac(
+            print(f"\n{'='*65}")
+            print(f"  Okruženje: {env_id}")
+            print(f"  {env_cfg.get('description', '')}")
+            print(f"{'='*65}")
+
+            env_results: list[dict] = []
+
+            # ── PPO run-ovi ──────────────────────────────────────────────────────
+            if "ppo" in run_algos:
+                for n_workers in effective_workers:
+                    print(f"\n>>> PPO | env_runners={n_workers} | {env_id}")
+
+                    ckpt_dir = str(output_dir / "checkpoints" / f"ppo_{env_key}_w{n_workers}")
+
+                    run = train_ray(
                         env_id=env_id,
                         num_env_runners=n_workers,
-                        max_iterations=sac_max_iter,
+                        max_iterations=effective_max_iter,
                         target_reward=env_cfg["target_reward"],
-                        train_batch_size=sac_params.get("train_batch_size", 256),
-                        lr=sac_params.get("lr", 0.00073),
+                        train_batch_size=ppo_params.get("train_batch_size", ppo_defaults.get("train_batch_size", 4000)),
+                        lr=ppo_params.get("lr", 3e-4),
                         ray_address=ray_address,
                         output_dir=str(output_dir),
                         gif_dir=str(gif_dir) if gif_dir else None,
-                        evolution_every=env_cfg.get(
-                            "sac_evolution_every",
-                            env_cfg.get("evolution_every", 400),
-                        ),
-                        sac_params=sac_params,
+                        evolution_every=env_cfg.get("evolution_every", 10),
+                        ppo_params=ppo_params,
                         checkpoint_dir=ckpt_dir,
                     )
 
                     run_dict = run.to_dict()
                     _run_evaluation(
                         run_dict, run, env_id, evaluate_episodes,
-                        gif_dir, algo_tag=f"sac_w{n_workers}",
+                        gif_dir, algo_tag=f"ppo_w{n_workers}",
                         ckpt_dir=ckpt_dir,
                     )
                     env_results.append(run_dict)
 
-        # ── DQN run-ovi (samo za envove sa dqn_override — diskretne akcije) ──
-        if "dqn" in run_algos:
-            if "dqn_override" not in env_cfg:
-                print(f"\n  [PRESKAČEM] DQN nije konfigurisan za {env_key} (nema dqn_override — koristiti za diskretne akcije)")
-            else:
-                dqn_params = {**dqn_defaults, **env_cfg.get("dqn_override", {})}
-                dqn_max_iter = env_cfg.get("dqn_max_iterations", effective_max_iter)
-                dqn_workers = [max(w, 1) for w in effective_workers]
-                seen_dqn: set[int] = set()
-                dqn_workers = [w for w in dqn_workers if not (w in seen_dqn or seen_dqn.add(w))]
+            # ── APPO run-ovi ─────────────────────────────────────────────────────
+            if "appo" in run_algos:
+                appo_params = {**appo_defaults, **env_cfg.get("appo_override", {})}
+                appo_max_iter = env_cfg.get("appo_max_iterations", effective_max_iter)
 
-                for n_workers in dqn_workers:
-                    print(f"\n>>> DQN | env_runners={n_workers} | {env_id}")
+                for n_workers in effective_workers:
+                    print(f"\n>>> APPO | env_runners={n_workers} | {env_id}")
 
-                    ckpt_dir = str(output_dir / "checkpoints" / f"dqn_{env_key}_w{n_workers}")
+                    ckpt_dir = str(output_dir / "checkpoints" / f"appo_{env_key}_w{n_workers}")
 
-                    run = train_dqn(
+                    run = train_appo(
                         env_id=env_id,
                         num_env_runners=n_workers,
-                        max_iterations=dqn_max_iter,
+                        max_iterations=appo_max_iter,
                         target_reward=env_cfg["target_reward"],
-                        batch_size=dqn_params.get("batch_size", 128),
-                        lr=dqn_params.get("lr", 0.00063),
+                        lr=appo_params.get("lr", 3e-4),
                         ray_address=ray_address,
                         output_dir=str(output_dir),
                         gif_dir=str(gif_dir) if gif_dir else None,
                         evolution_every=env_cfg.get(
-                            "dqn_evolution_every",
-                            env_cfg.get("evolution_every", 1300),
+                            "appo_evolution_every",
+                            env_cfg.get("evolution_every", 10),
                         ),
-                        dqn_params=dqn_params,
+                        appo_params=appo_params,
                         checkpoint_dir=ckpt_dir,
                     )
 
                     run_dict = run.to_dict()
                     _run_evaluation(
                         run_dict, run, env_id, evaluate_episodes,
-                        gif_dir, algo_tag=f"dqn_w{n_workers}",
+                        gif_dir, algo_tag=f"appo_w{n_workers}",
                         ckpt_dir=ckpt_dir,
                     )
                     env_results.append(run_dict)
 
-        # Sačuvaj summary za ovaj env
-        summary_path = output_dir / f"summary_{env_key}.json"
-        summary_path.parent.mkdir(parents=True, exist_ok=True)
-        summary_path.write_text(json.dumps(env_results, indent=2), encoding="utf-8")
-        print(f"\nSummary: {summary_path}")
+            # ── SAC run-ovi (samo za envove sa sac_override — kontinualne akcije) ──
+            if "sac" in run_algos:
+                if "sac_override" not in env_cfg:
+                    print(f"\n  [PRESKAČEM] SAC nije konfigurisan za {env_key} (nema sac_override — koristiti za kontinualne akcije)")
+                else:
+                    sac_params = {**sac_defaults, **env_cfg.get("sac_override", {})}
+                    sac_max_iter = env_cfg.get("sac_max_iterations", effective_max_iter)
+                    sac_workers = [max(w, 1) for w in effective_workers]
+                    seen_sac: set[int] = set()
+                    sac_workers = [w for w in sac_workers if not (w in seen_sac or seen_sac.add(w))]
 
-        all_results[env_key] = env_results
-        _print_env_summary(env_key, env_id, env_results)
+                    for n_workers in sac_workers:
+                        print(f"\n>>> SAC | env_runners={n_workers} | {env_id}")
 
-    # Ukupna tabela za sve envove
-    if len(env_keys) > 1:
-        _print_grand_summary(all_results)
+                        ckpt_dir = str(output_dir / "checkpoints" / f"sac_{env_key}_w{n_workers}")
 
-    return all_results
+                        run = train_sac(
+                            env_id=env_id,
+                            num_env_runners=n_workers,
+                            max_iterations=sac_max_iter,
+                            target_reward=env_cfg["target_reward"],
+                            train_batch_size=sac_params.get("train_batch_size", 256),
+                            lr=sac_params.get("lr", 0.00073),
+                            ray_address=ray_address,
+                            output_dir=str(output_dir),
+                            gif_dir=str(gif_dir) if gif_dir else None,
+                            evolution_every=env_cfg.get(
+                                "sac_evolution_every",
+                                env_cfg.get("evolution_every", 400),
+                            ),
+                            sac_params=sac_params,
+                            checkpoint_dir=ckpt_dir,
+                        )
+
+                        run_dict = run.to_dict()
+                        _run_evaluation(
+                            run_dict, run, env_id, evaluate_episodes,
+                            gif_dir, algo_tag=f"sac_w{n_workers}",
+                            ckpt_dir=ckpt_dir,
+                        )
+                        env_results.append(run_dict)
+
+            # ── DQN run-ovi (samo za envove sa dqn_override — diskretne akcije) ──
+            if "dqn" in run_algos:
+                if "dqn_override" not in env_cfg:
+                    print(f"\n  [PRESKAČEM] DQN nije konfigurisan za {env_key} (nema dqn_override — koristiti za diskretne akcije)")
+                else:
+                    dqn_params = {**dqn_defaults, **env_cfg.get("dqn_override", {})}
+                    dqn_max_iter = env_cfg.get("dqn_max_iterations", effective_max_iter)
+                    dqn_workers = [max(w, 1) for w in effective_workers]
+                    seen_dqn: set[int] = set()
+                    dqn_workers = [w for w in dqn_workers if not (w in seen_dqn or seen_dqn.add(w))]
+
+                    for n_workers in dqn_workers:
+                        print(f"\n>>> DQN | env_runners={n_workers} | {env_id}")
+
+                        ckpt_dir = str(output_dir / "checkpoints" / f"dqn_{env_key}_w{n_workers}")
+
+                        run = train_dqn(
+                            env_id=env_id,
+                            num_env_runners=n_workers,
+                            max_iterations=dqn_max_iter,
+                            target_reward=env_cfg["target_reward"],
+                            batch_size=dqn_params.get("batch_size", 128),
+                            lr=dqn_params.get("lr", 0.00063),
+                            ray_address=ray_address,
+                            output_dir=str(output_dir),
+                            gif_dir=str(gif_dir) if gif_dir else None,
+                            evolution_every=env_cfg.get(
+                                "dqn_evolution_every",
+                                env_cfg.get("evolution_every", 1300),
+                            ),
+                            dqn_params=dqn_params,
+                            checkpoint_dir=ckpt_dir,
+                        )
+
+                        run_dict = run.to_dict()
+                        _run_evaluation(
+                            run_dict, run, env_id, evaluate_episodes,
+                            gif_dir, algo_tag=f"dqn_w{n_workers}",
+                            ckpt_dir=ckpt_dir,
+                        )
+                        env_results.append(run_dict)
+
+            # Sačuvaj summary za ovaj env
+            summary_path = output_dir / f"summary_{env_key}.json"
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            summary_path.write_text(json.dumps(env_results, indent=2), encoding="utf-8")
+            print(f"\nSummary: {summary_path}")
+
+            all_results[env_key] = env_results
+            _print_env_summary(env_key, env_id, env_results)
+
+        # Ukupna tabela za sve envove
+        if len(env_keys) > 1:
+            _print_grand_summary(all_results)
+
+        return all_results
+    finally:
+        _stop_monitor(monitor_proc)
+
+
+def _start_monitor(
+    output_dir: Path,
+    env_keys: list[str],
+    run_algos: list[str],
+    interval: float = 2.0,
+) -> subprocess.Popen:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    tag = "_".join(env_keys) + "_" + "_".join(run_algos)
+    csv_path = output_dir / f"monitor_{tag}_{stamp}.csv"
+    script = Path(__file__).parent / "monitor_resources.py"
+    return subprocess.Popen(
+        [
+            sys.executable,
+            str(script),
+            "--out",
+            str(csv_path),
+            "--interval",
+            str(interval),
+        ],
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+    )
+
+
+def _stop_monitor(proc: subprocess.Popen | None) -> None:
+    if proc is None:
+        return
+    proc.send_signal(signal.SIGTERM)
+    try:
+        proc.wait(timeout=15)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 def _run_evaluation(
@@ -478,6 +530,21 @@ def main() -> None:
         metavar="N",
         help="Prepiši max_iterations iz config-a (korisno za brze testove).",
     )
+    parser.add_argument(
+        "--monitor",
+        action="store_true",
+        help=(
+            "Tokom celog run-a snimaj CPU i RAM u results/monitor_*.csv "
+            "(plus .summary.txt sa mean/max)."
+        ),
+    )
+    parser.add_argument(
+        "--monitor-interval",
+        type=float,
+        default=2.0,
+        metavar="SEC",
+        help="Interval uzorkovanja za --monitor (sekunde).",
+    )
     args = parser.parse_args()
 
     run_all_experiments(
@@ -491,6 +558,8 @@ def main() -> None:
         evaluate_episodes=args.evaluate,
         algorithms=args.algo,
         max_iterations_override=args.max_iterations,
+        monitor=args.monitor,
+        monitor_interval=args.monitor_interval,
     )
 
 

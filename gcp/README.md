@@ -24,15 +24,17 @@ BipedalWalker je na **više** VM-ova jer je fizika spora, pa se distribuiranje i
 # CartPole + LunarLander
 ray up gcp/ray_cluster_lunarlander.yaml
 ray attach gcp/ray_cluster_lunarlander.yaml
-python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
+# Na VM: cd ~/master-rad && python src/run_experiments.py ... | tee results/run.log
+# Sa laptopa PRE ray down:
+mkdir -p results/gcp
+ray rsync-down gcp/ray_cluster_lunarlander.yaml ~/master-rad/results/ ./results/gcp/
 ray down gcp/ray_cluster_lunarlander.yaml
 
 # BipedalWalker
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
-python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
+mkdir -p results/gcp
+ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
@@ -95,7 +97,7 @@ cd ~/master-rad
 ray start --head --num-cpus=16
 
 python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
+    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10 --monitor
 ```
 
 ### Korak 5 — Preuzmi rezultate
@@ -126,7 +128,7 @@ pip install "ray[default]"
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
+    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10 --monitor
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 

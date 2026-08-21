@@ -76,15 +76,15 @@ source .venv/bin/activate
 
 # CartPole, svi diskretni algoritmi, GIF + eval
 python src/run_experiments.py --envs cartpole \
-    --algo ppo appo dqn --workers 4 --gif --evaluate 10
+    --algo ppo appo dqn --workers 4 --gif --evaluate 10 --monitor
 
 # LunarLander
 python src/run_experiments.py --envs lunarlander \
-    --algo ppo appo dqn --workers 4 --gif --evaluate 10
+    --algo ppo appo dqn --workers 4 --gif --evaluate 10 --monitor
 
 # BipedalWalker (lokalno w=4, ~30–60 min za PPO)
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 4 --gif --evaluate 10
+    --algo ppo appo sac --workers 4 --gif --evaluate 10 --monitor
 ```
 
 Samo PPO (default `--algo ppo`):
@@ -104,6 +104,10 @@ Grafikoni iz `results/*.json`:
 ```bash
 python src/plot_results.py
 # PNG-ovi: results/plots/
+
+# CPU/RAM tokom run-a: dodaj --monitor (CSV + sažetak u results/).
+# Grafikon posle:
+python src/monitor_resources.py --plot results/monitor_cartpole_ppo_....csv
 ```
 
 ## Okruženja
@@ -134,20 +138,32 @@ Lake igre (brz env korak) idu na **jednu** VM — mreža između mašina usporav
 # CartPole + LunarLander
 ray up gcp/ray_cluster_lunarlander.yaml
 ray attach gcp/ray_cluster_lunarlander.yaml
+# Na VM-u:
+cd ~/master-rad
 python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
+    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10 --monitor \
+    | tee results/run.log
+# Sa laptopa, PRE ray down:
+mkdir -p results/gcp
+ray rsync-down gcp/ray_cluster_lunarlander.yaml ~/master-rad/results/ ./results/gcp/
 ray down gcp/ray_cluster_lunarlander.yaml
 
 # BipedalWalker
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
+# Na VM-u:
+cd ~/master-rad
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
+    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10 --monitor \
+    | tee results/run.log
+mkdir -p results/gcp
 ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
-Na GCP: CartPole/LunarLander `--workers 1 2 4 8 16`; BipedalWalker isto plus **32**. **Obavezno** `ray down` kad završiš.
+Na GCP: CartPole/LunarLander `--workers 1 2 4 8 16`; BipedalWalker isto plus **32**.
+
+Rezultati žive samo na head VM (`~/master-rad/results`). `file_mounts` šalju `src` i `config` na klaster, ne vraćaju rezultate. **Prvo rsync-down, pa `ray down`.** `ray down` briše disk.
 
 ## Metrike
 
@@ -158,3 +174,4 @@ Iz `results/*.json` i `results/plots/`:
 - **Efikasnost** — `speedup / N`
 - **Eval mean ± std** — posle treninga, `--evaluate N`
 - **Kriva učenja** — nagrada po iteraciji
+- **CPU / RAM** — `--monitor` → `results/monitor_*.csv` (uzorak svake 2s). Na BipedalWalker multi-VM meri samo **head** mašinu.

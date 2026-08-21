@@ -20,8 +20,13 @@
 #   ray up gcp/ray_cluster_bipedalwalker.yaml
 #   ray attach gcp/ray_cluster_bipedalwalker.yaml
 #   # Na VM:
+#   cd ~/master-rad
 #   python src/run_experiments.py --envs bipedalwalker \
-#       --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
+#       --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10 --monitor \
+#       | tee results/run.log
+#   # Sa laptopa, PRE ray down:
+#   mkdir -p results/gcp
+#   ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
 #   ray down gcp/ray_cluster_bipedalwalker.yaml
 #
 # Cena (procena, jedan pun run sa w=32):
