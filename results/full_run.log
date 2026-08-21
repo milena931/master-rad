@@ -1,0 +1,756 @@
+nohup: ignoring input
+
+#################################################################
+  MASTER RAD — SKALABILNOST EKSPERIMENTI
+  Okruženja: ['cartpole', 'lunarlander', 'bipedalwalker']
+  Algoritmi: ['ppo', 'appo', 'dqn', 'sac']
+  Workers:   [4]
+  GIF-ovi:   da
+  Evaluacija: 10 epizoda po runu (mean ± std)
+  Ray:       lokalni klaster
+#################################################################
+
+=================================================================
+  Okruženje: CartPole-v1
+  Balansiranje štapa — brzo, bez GPU
+=================================================================
+
+>>> PPO | env_runners=4 | CartPole-v1
+2026-08-21 00:08:16,895	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+[2026-08-21 00:08:17,415 E 114065 114065] core_worker.cc:2149: Actor with class name: 'RolloutWorker' and ID: 'c22b093edf5b4820c9b3b40101000000' has constructor arguments in the object store and max_restarts > 0. If the arguments in the object store go out of scope or are lost, the actor restart will fail. See https://github.com/ray-project/ray/issues/53727 for more details.
+2026-08-21 00:08:22,468	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         CartPole-v1
+  EnvRunners:  4  ← paralelni procesi
+  BatchSize:   4000 koraka/iter
+  SGD itera.:  30  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 450
+  PPO params:  lr=0.0003, gamma=0.99, ent_coef=0.0, clip=0.2
+  GIF-ovi:     /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=12
+2026-08-21 00:08:23,518	WARNING train_ops.py:114 -- DeprecationWarning: `ray.rllib.execution.train_ops.multi_gpu_train_one_step` has been deprecated. This will raise an error in the future!
+   0 |      22.34 |       994 |      4.0 |         9
+   1 |      37.60 |       996 |      4.0 |        13
+   2 |      55.05 |       990 |      4.0 |        17
+   3 |      85.22 |       990 |      4.0 |        21
+   4 |     117.72 |      1041 |      3.8 |        25
+   5 |     149.47 |       992 |      4.0 |        29
+   6 |     179.35 |       996 |      4.0 |        33
+   7 |     212.37 |      1038 |      3.9 |        37
+   8 |     244.92 |      1049 |      3.8 |        41
+   9 |     278.03 |       998 |      4.0 |        45
+  10 |     309.27 |      1024 |      3.9 |        49
+  11 |     335.90 |      1034 |      3.9 |        53
+  12 |     358.09 |      1043 |      3.8 |        57
+  13 |     383.00 |      1028 |      3.9 |        60
+  14 |     401.62 |      1031 |      3.9 |        64
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+2026-08-21 00:09:21,729	WARNING play_game.py:264 -- DeprecationWarning: `compute_single_action` has been deprecated. `Algorithm.compute_single_action` should no longer be used. Get the RLModule instance through `Algorithm.get_module([module ID])`, then compute actions through `RLModule.forward_inference({'obs': [obs batch]})`. This will raise an error in the future!
+  [Evolution] Iter 15 | nagrada≈300
+  15 |     417.83 |      1027 |      3.9 |        69
+  16 |     441.92 |       994 |      4.0 |        73
+  17 |     456.71 |       970 |      4.1 |        77
+
+  Ciljna nagrada 450 dostignuta za 77s!
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/ppo_cartpole_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+    Naučen agent (Ray w=4): nagrada=500
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/ray_w4_trained.gif  (500 frejmova, 114 KB)
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/ray_w4_evolution.gif  (736 frejmova, 219 KB)
+
+Prosečni throughput: 1013 koraka/sec
+Metrike: /home/milena/Documents/etf/master/master-rad/results/ray_rllib_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | ppo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/milena/Documents/etf/master/master-rad/results/checkpoints/ppo_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     500.00
+       2 |     500.00
+       3 |     500.00
+       4 |     500.00
+       5 |     500.00
+       6 |     500.00
+       7 |     500.00
+       8 |     500.00
+       9 |     500.00
+      10 |     500.00
+
+────────────────────────────────────────
+  Prosek:  500.00  ±  0.00  (std)
+  Min:     500.00
+  Max:     500.00
+────────────────────────────────────────
+
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/ppo_w4_best.gif  (500 frejmova, 109 KB)
+  Best epizoda (500) sačuvana: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/ppo_w4_best.gif
+  ppo_w4: mean=500.00 ± 0.00
+
+>>> APPO | env_runners=4 | CartPole-v1
+2026-08-21 00:10:11,783	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+2026-08-21 00:10:15,495	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              CartPole-v1
+  EnvRunners:       4  ← asinhroni procesi
+  BatchSize:        2000 koraka/iter
+  RolloutFragment:  50 koraka/worker/slanje
+  Cilj:             nagrada >= 450
+  NormObs:          False
+  lr:               0.0003
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.2  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.95
+  grad_clip:        40
+  min_sample/iter:  2000 koraka
+  Ukupno koraka:    ~160k (80 itera)
+  GIF-ovi:          /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=13
+   0 |      21.61 |      2892 |      0.7 |         4
+   1 |      22.63 |      3015 |      0.7 |         5
+   2 |      23.77 |      2623 |      0.8 |         5
+   3 |      24.57 |      2931 |      0.7 |         6
+   4 |      27.23 |      2870 |      0.7 |         7
+   5 |      26.69 |      2534 |      0.8 |         8
+   6 |      28.99 |      2779 |      0.7 |         8
+   7 |      27.24 |      2604 |      0.8 |         9
+   8 |      29.53 |      2668 |      0.7 |        10
+   9 |      32.56 |      2734 |      0.7 |        11
+  10 |      36.33 |      2811 |      0.7 |        11
+  11 |      34.68 |      2597 |      0.8 |        12
+  12 |      34.25 |      2514 |      0.8 |        13
+  13 |      38.00 |      2591 |      0.8 |        14
+  14 |      43.44 |      2578 |      0.8 |        14
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈150
+  15 |      49.66 |      2767 |      0.7 |        16
+  16 |      51.44 |      2558 |      0.8 |        16
+  17 |      51.14 |      2598 |      0.8 |        17
+  18 |      50.20 |      2613 |      0.8 |        18
+  19 |      55.45 |      2520 |      0.8 |        19
+  20 |      55.45 |      2446 |      0.8 |        19
+  21 |      57.24 |      2392 |      0.8 |        20
+  22 |      57.32 |      2716 |      0.7 |        21
+  23 |      60.39 |      2448 |      0.8 |        22
+  24 |      60.23 |      2561 |      0.8 |        23
+  25 |      67.01 |      2616 |      0.8 |        23
+  26 |      68.48 |      2694 |      0.7 |        24
+  27 |      71.60 |      2474 |      0.8 |        25
+  28 |      78.49 |      2492 |      0.8 |        26
+  29 |      79.26 |      2460 |      0.8 |        27
+  [Evolution] Iter 30 | nagrada≈117
+  30 |      83.05 |      2439 |      0.8 |        28
+  31 |      85.63 |      2593 |      0.8 |        28
+  32 |      89.04 |      2398 |      0.8 |        29
+  33 |      93.13 |      2588 |      0.8 |        30
+  34 |      94.58 |      2510 |      0.8 |        31
+  35 |      98.71 |      2600 |      0.8 |        32
+  36 |     107.41 |      2591 |      0.8 |        32
+  37 |     109.48 |      2648 |      0.8 |        33
+  38 |     115.35 |      2600 |      0.8 |        34
+  39 |     119.17 |      2602 |      0.8 |        35
+  40 |     127.37 |      2676 |      0.8 |        35
+  41 |     134.76 |      2571 |      0.8 |        36
+  42 |     141.30 |      2619 |      0.8 |        37
+  43 |     141.74 |      2700 |      0.7 |        38
+  44 |     146.23 |      2512 |      0.8 |        39
+  [Evolution] Iter 45 | nagrada≈300
+  45 |     153.46 |      2794 |      0.7 |        40
+  46 |     161.78 |      2546 |      0.8 |        41
+  47 |     165.96 |      2624 |      0.8 |        41
+  48 |     164.90 |      2518 |      0.8 |        42
+  49 |     172.47 |      2668 |      0.7 |        43
+  50 |     173.30 |      2634 |      0.8 |        44
+  51 |     178.27 |      2693 |      0.7 |        45
+  52 |     182.79 |      2629 |      0.8 |        45
+  53 |     181.66 |      2669 |      0.7 |        46
+  54 |     191.97 |      2616 |      0.8 |        47
+  55 |     193.23 |      2511 |      0.8 |        48
+  56 |     196.96 |      2329 |      0.9 |        48
+  57 |     198.29 |      2326 |      0.9 |        49
+  58 |     208.71 |      2563 |      0.8 |        50
+  59 |     215.15 |      2582 |      0.8 |        51
+  [Evolution] Iter 60 | nagrada≈300
+  60 |     211.73 |      2857 |      0.7 |        52
+  61 |     224.50 |      2546 |      0.8 |        53
+  62 |     229.89 |      2621 |      0.8 |        54
+  63 |     235.06 |      2590 |      0.8 |        55
+  64 |     241.99 |      2624 |      0.8 |        55
+  65 |     247.86 |      2471 |      0.8 |        56
+  66 |     249.56 |      2685 |      0.7 |        57
+  67 |     251.59 |      2600 |      0.8 |        58
+  68 |     247.87 |      2651 |      0.8 |        58
+  69 |     253.87 |      2584 |      0.8 |        59
+  70 |     254.40 |      2746 |      0.7 |        60
+  71 |     247.01 |      2523 |      0.8 |        61
+  72 |     243.79 |      2636 |      0.8 |        61
+  73 |     235.14 |      2622 |      0.8 |        62
+  74 |     224.54 |      2607 |      0.8 |        63
+  [Evolution] Iter 75 | nagrada≈216
+  75 |     209.46 |      2838 |      0.7 |        64
+  76 |     207.88 |      2694 |      0.7 |        65
+  77 |     204.37 |      2633 |      0.8 |        66
+  78 |     205.16 |      2544 |      0.8 |        66
+  79 |     202.08 |      2779 |      0.7 |        67
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/appo_cartpole_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+    Naučen agent (APPO w=4): nagrada=214
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/appo_w4_trained.gif  (214 frejmova, 185 KB)
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/appo_w4_evolution.gif  (1349 frejmova, 1405 KB)
+
+Prosečni throughput: 2616 koraka/sec
+Metrike: /home/milena/Documents/etf/master/master-rad/results/appo_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | appo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/milena/Documents/etf/master/master-rad/results/checkpoints/appo_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     309.00
+       2 |     314.00
+       3 |     173.00
+       4 |     231.00
+       5 |     316.00
+       6 |     210.00
+       7 |     265.00
+       8 |     266.00
+       9 |     414.00
+      10 |     256.00
+
+────────────────────────────────────────
+  Prosek:  275.40  ±  63.86  (std)
+  Min:     173.00
+  Max:     414.00
+────────────────────────────────────────
+
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/appo_w4_best.gif  (414 frejmova, 271 KB)
+  Best epizoda (414) sačuvana: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/appo_w4_best.gif
+  appo_w4: mean=275.40 ± 63.86
+
+  [PRESKAČEM] SAC nije konfigurisan za cartpole (nema sac_override — koristiti za kontinualne akcije)
+
+>>> DQN | env_runners=4 | CartPole-v1
+2026-08-21 00:12:02,334	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+2026-08-21 00:12:06,078	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              CartPole-v1
+  EnvRunners:       4  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        64  (SB3: batch_size)
+  BufferSize:       10000
+  LearningStarts:   1000 koraka
+  Epsilon:          1.0 → 0.04 za 2500 koraka
+  TargetUpdate:     svaka 100 grad. koraka
+  Ukupno koraka:    ~25k (25 itera)
+  Cilj:             nagrada >= 450
+  lr:               0.001
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 5. iteracija
+  GIF-ovi:          /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=16
+2026-08-21 00:12:06,200	WARNING multi_agent_prioritized_replay_buffer.py:216 -- Adding batches with column `weights` to this buffer while providing weights as a call argument to the add method results in the column being overwritten.
+     1 |     1008 |      19.73 |      1386 |         4
+     5 |     5040 |      25.55 |       416 |        14
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 8 | nagrada≈55
+    10 |    10080 |      56.21 |       413 |        26
+    15 |    15120 |      81.52 |       407 |        39
+  [Evolution] Iter 16 | nagrada≈34
+    20 |    20160 |      73.45 |       404 |        52
+  [Evolution] Iter 24 | nagrada≈13
+    25 |    25200 |      68.06 |       401 |        64
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/dqn_cartpole_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole
+    Naučen agent (DQN w=4): nagrada=9
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/dqn_w4_trained.gif  (9 frejmova, 7 KB)
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/dqn_w4_evolution.gif  (175 frejmova, 167 KB)
+
+Ukupno prikupljenih koraka: 25,200
+Prosečni throughput: 446 koraka/sec
+Metrike: /home/milena/Documents/etf/master/master-rad/results/dqn_CartPole-v1_w4.json
+
+>>> Evaluacija (10 epizoda) | dqn_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/milena/Documents/etf/master/master-rad/results/checkpoints/dqn_cartpole_w4
+  Env:         CartPole-v1
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |       9.00
+       2 |      10.00
+       3 |      10.00
+       4 |       9.00
+       5 |      10.00
+       6 |       8.00
+       7 |      10.00
+       8 |       9.00
+       9 |       9.00
+      10 |      10.00
+
+────────────────────────────────────────
+  Prosek:  9.40  ±  0.66  (std)
+  Min:     8.00
+  Max:     10.00
+────────────────────────────────────────
+
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/dqn_w4_best.gif  (10 frejmova, 9 KB)
+  Best epizoda (10) sačuvana: /home/milena/Documents/etf/master/master-rad/results/gifs/cartpole/dqn_w4_best.gif
+  dqn_w4: mean=9.40 ± 0.66
+
+Summary: /home/milena/Documents/etf/master/master-rad/results/summary_cartpole.json
+
+  --- Rezultati: CartPole-v1 ---
+  Framework              Workers   Duration   Best Rwd   Steps/s      Eval mean±std
+  ----------------------------------------------------------------------------------
+  ray_rllib                    4      77.1s      456.7      1013   500.00 ± 0.00   
+  appo                         4      67.2s      254.4      2616   275.40 ± 63.86  
+  dqn                          4      64.1s       82.7       446     9.40 ± 0.66   
+
+=================================================================
+  Okruženje: LunarLander-v3
+  Sletanje rakete — srednja zahtevnost, bez GPU
+=================================================================
+
+>>> PPO | env_runners=4 | LunarLander-v3
+2026-08-21 00:13:15,753	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+2026-08-21 00:13:20,141	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib PPO
+  Env:         LunarLander-v3
+  EnvRunners:  4  ← paralelni procesi
+  BatchSize:   16384 koraka/iter
+  MiniBatch:   64  (SB3: batch_size)
+  SGD itera.:  4  (SB3: n_epochs)
+  NormObs:     False
+  Cilj:        nagrada >= 200
+  PPO params:  lr=0.0003, gamma=0.999, ent_coef=0.01, clip=0.2
+  GIF-ovi:     /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=-222
+   0 |    -174.33 |      2155 |      7.6 |        12
+   1 |    -138.63 |      2116 |      7.7 |        19
+   2 |    -116.92 |      2183 |      7.5 |        27
+   3 |    -100.88 |      2151 |      7.6 |        35
+   4 |     -77.39 |      2191 |      7.5 |        42
+   5 |     -60.45 |      2134 |      7.7 |        50
+   6 |     -34.13 |      2197 |      7.5 |        57
+   7 |     -21.78 |      2185 |      7.5 |        65
+   8 |     -16.79 |      2196 |      7.5 |        72
+   9 |     -10.03 |      2098 |      7.8 |        80
+  10 |      -0.97 |      2177 |      7.5 |        87
+  11 |       4.88 |      2195 |      7.5 |        95
+  12 |      15.62 |      2121 |      7.7 |       103
+  13 |      17.32 |      2137 |      7.7 |       110
+  14 |      24.98 |      1880 |      8.7 |       119
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈99
+  15 |      27.97 |      2252 |      7.3 |       127
+  16 |      31.98 |      2140 |      7.7 |       135
+  17 |      35.24 |      2170 |      7.5 |       142
+  18 |      37.99 |      2117 |      7.7 |       150
+  19 |      34.56 |      2161 |      7.6 |       158
+  20 |      36.28 |      2164 |      7.6 |       165
+  21 |      38.68 |      1838 |      8.9 |       174
+  22 |      47.54 |      2203 |      7.4 |       181
+Exception in thread Thread-2:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/learner_thread.py", line 76, in run
+    self.step()
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/multi_gpu_learner_thread.py", line 149, in step
+    buffer_idx, released = self.ready_tower_stacks_buffer.get()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/minibatch_buffer.py", line 51, in get
+    self.buffers[self.idx] = self.inqueue.get(timeout=self.timeout)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/queue.py", line 179, in get
+    raise Empty
+_queue.Empty
+  23 |      40.27 |      2167 |      7.6 |       189
+  24 |      33.10 |      2172 |      7.5 |       197
+  25 |       9.33 |      2152 |      7.6 |       204
+  26 |       8.31 |      1895 |      8.6 |       213
+  27 |       6.41 |      2194 |      7.5 |       220
+  28 |      17.25 |      2143 |      7.6 |       228
+  29 |      16.19 |      2136 |      7.7 |       236
+  [Evolution] Iter 30 | nagrada≈10
+  30 |      17.91 |      2243 |      7.3 |       244
+  31 |      24.67 |      2147 |      7.6 |       251
+  32 |      24.78 |      2195 |      7.5 |       259
+  33 |      28.75 |      2122 |      7.7 |       266
+  34 |      35.21 |      2170 |      7.6 |       274
+  35 |      25.13 |      2207 |      7.4 |       281
+  36 |      19.41 |      2125 |      7.7 |       289
+  37 |      26.63 |      2137 |      7.7 |       297
+  38 |      33.77 |      2181 |      7.5 |       304
+  39 |      51.03 |      2192 |      7.5 |       312
+  40 |      43.73 |      2159 |      7.6 |       319
+  41 |      40.74 |      2139 |      7.7 |       327
+  42 |      36.95 |      2142 |      7.6 |       335
+  43 |      38.44 |      2250 |      7.3 |       342
+  44 |      51.15 |      2106 |      7.8 |       350
+  [Evolution] Iter 45 | nagrada≈51
+  45 |      50.98 |      2171 |      7.5 |       358
+  46 |      50.10 |      2158 |      7.6 |       366
+  47 |      32.82 |      2153 |      7.6 |       373
+  48 |      36.42 |      2160 |      7.6 |       381
+  49 |      52.20 |      2177 |      7.5 |       388
+  50 |      63.93 |      2189 |      7.5 |       396
+  51 |      72.44 |      2195 |      7.5 |       403
+  52 |      94.16 |      2139 |      7.7 |       411
+  53 |      94.28 |      2113 |      7.8 |       419
+  54 |      91.23 |      1867 |      8.8 |       427
+  55 |      96.61 |      2225 |      7.4 |       435
+  56 |      94.84 |      2094 |      7.8 |       443
+  57 |      93.80 |      2124 |      7.7 |       450
+  58 |     104.53 |      2180 |      7.5 |       458
+  59 |     108.37 |      2187 |      7.5 |       465
+  [Evolution] Iter 60 | nagrada≈51
+  60 |     103.80 |      2167 |      7.6 |       474
+  61 |     105.74 |      1877 |      8.7 |       482
+  62 |     101.38 |      1794 |      9.1 |       492
+  63 |     104.26 |      2183 |      7.5 |       499
+  64 |     102.75 |      2200 |      7.4 |       506
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/ppo_lunarlander_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+    Naučen agent (Ray w=4): nagrada=253
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/ray_w4_trained.gif  (401 frejmova, 849 KB)
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/ray_w4_evolution.gif  (1709 frejmova, 3976 KB)
+
+Prosečni throughput: 2137 koraka/sec
+Metrike: /home/milena/Documents/etf/master/master-rad/results/ray_rllib_LunarLander-v3_w4.json
+
+>>> Evaluacija (10 epizoda) | ppo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/milena/Documents/etf/master/master-rad/results/checkpoints/ppo_lunarlander_w4
+  Env:         LunarLander-v3
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |     153.59
+       2 |      73.52
+       3 |     249.61
+       4 |      84.52
+       5 |      47.91
+       6 |      86.20
+       7 |      95.32
+       8 |      82.55
+       9 |     113.99
+      10 |      41.13
+
+────────────────────────────────────────
+  Prosek:  102.83  ±  57.45  (std)
+  Min:     41.13
+  Max:     249.61
+────────────────────────────────────────
+
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/ppo_w4_best.gif  (425 frejmova, 894 KB)
+  Best epizoda (250) sačuvana: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/ppo_w4_best.gif
+  ppo_w4: mean=102.83 ± 57.45
+
+>>> APPO | env_runners=4 | LunarLander-v3
+2026-08-21 00:22:41,986	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+2026-08-21 00:22:46,258	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib APPO  (async PPO)
+  Env:              LunarLander-v3
+  EnvRunners:       4  ← asinhroni procesi
+  BatchSize:        16384 koraka/iter
+  RolloutFragment:  200 koraka/worker/slanje
+  Cilj:             nagrada >= 200
+  NormObs:          False
+  lr:               0.0003
+  num_sgd_iter:     1  ← SGD prolaza/batchu
+  clip_param:       0.2  ← PPO clipping
+  vtrace:           True  ← RLlib APPO zahteva V-trace
+  entropy_coeff:    0.01
+  gae_lambda:       0.98
+  grad_clip:        40
+  min_sample/iter:  16384 koraka
+  Ukupno koraka:    ~1065k (65 itera)
+  GIF-ovi:          /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+=================================================================
+
+Iter |     Reward |   Steps/s |  Iter(s) |  Total(s)
+------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=-177
+/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/utils/metrics/window_stat.py:58: RuntimeWarning: Mean of empty slice
+  return float(np.nanmean(self.items[: self.count]))
+/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/numpy/lib/_nanfunctions_impl.py:1997: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+   0 |    -178.94 |      3261 |      5.0 |         9
+   1 |    -177.64 |      3273 |      5.0 |        14
+   2 |    -183.86 |      3151 |      5.2 |        19
+   3 |    -174.90 |      2904 |      5.6 |        25
+   4 |    -170.74 |      2855 |      5.7 |        31
+   5 |    -162.69 |      2967 |      5.5 |        36
+   6 |    -161.45 |      2883 |      5.7 |        42
+   7 |    -164.57 |      3032 |      5.4 |        47
+   8 |    -149.88 |      2874 |      5.7 |        53
+   9 |    -176.61 |      2937 |      5.6 |        59
+  10 |    -157.10 |      2884 |      5.7 |        64
+  11 |    -162.70 |      2994 |      5.5 |        70
+  12 |    -151.79 |      3010 |      5.4 |        75
+  13 |    -154.74 |      2797 |      5.9 |        81
+  14 |    -156.79 |      2935 |      5.6 |        87
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 15 | nagrada≈-112
+  15 |    -161.10 |      3021 |      5.4 |        92
+  16 |    -150.81 |      2959 |      5.5 |        98
+  17 |    -146.12 |      2937 |      5.6 |       104
+  18 |    -160.47 |      3004 |      5.5 |       109
+  19 |    -144.33 |      2833 |      5.8 |       115
+  20 |    -139.59 |      2979 |      5.5 |       120
+  21 |    -142.36 |      2966 |      5.5 |       126
+  22 |    -150.48 |      2866 |      5.7 |       132
+  23 |    -151.48 |      3007 |      5.5 |       137
+  24 |    -159.27 |      2835 |      5.8 |       143
+  25 |    -154.71 |      2861 |      5.7 |       148
+  26 |    -147.72 |      2997 |      5.5 |       154
+  27 |    -149.22 |      2940 |      5.6 |       160
+  28 |    -144.05 |      2964 |      5.5 |       165
+  29 |    -151.36 |      2859 |      5.7 |       171
+  [Evolution] Iter 30 | nagrada≈-143
+  30 |    -148.52 |      3028 |      5.4 |       177
+  31 |    -152.34 |      2959 |      5.5 |       182
+  32 |    -149.68 |      3038 |      5.4 |       188
+  33 |    -147.98 |      2881 |      5.7 |       193
+  34 |    -145.81 |      2920 |      5.6 |       199
+  35 |    -148.61 |      2864 |      5.7 |       205
+  36 |    -135.88 |      2895 |      5.7 |       210
+  37 |    -158.49 |      2986 |      5.5 |       216
+  38 |    -144.92 |      2867 |      5.7 |       222
+  39 |    -143.13 |      2978 |      5.5 |       227
+  40 |    -148.29 |      2847 |      5.8 |       233
+  41 |    -151.24 |      2977 |      5.5 |       238
+  42 |    -136.97 |      2950 |      5.6 |       244
+  43 |    -143.78 |      3003 |      5.5 |       249
+  44 |    -135.81 |      2928 |      5.6 |       255
+  [Evolution] Iter 45 | nagrada≈-130
+  45 |    -149.49 |      2992 |      5.5 |       261
+  46 |    -144.98 |      2922 |      5.6 |       267
+  47 |    -141.16 |      2959 |      5.5 |       272
+  48 |    -149.56 |      2957 |      5.5 |       278
+  49 |    -143.69 |      2841 |      5.8 |       283
+  50 |    -139.76 |      2944 |      5.6 |       289
+  51 |    -145.21 |      2897 |      5.7 |       295
+  52 |    -148.25 |      2938 |      5.6 |       300
+  53 |    -150.67 |      2907 |      5.6 |       306
+  54 |    -142.44 |      2878 |      5.7 |       312
+  55 |    -141.33 |      2990 |      5.5 |       317
+  56 |    -154.03 |      2867 |      5.7 |       323
+  57 |    -145.99 |      2894 |      5.7 |       328
+  58 |    -137.01 |      2930 |      5.6 |       334
+  59 |    -139.85 |      2958 |      5.5 |       340
+  [Evolution] Iter 60 | nagrada≈-130
+  60 |    -141.64 |      2981 |      5.5 |       346
+  61 |    -140.75 |      2863 |      5.7 |       351
+  62 |    -142.41 |      2910 |      5.6 |       357
+  63 |    -142.72 |      2921 |      5.6 |       363
+  64 |    -137.29 |      2944 |      5.6 |       368
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/appo_lunarlander_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+    Naučen agent (APPO w=4): nagrada=-172
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/appo_w4_trained.gif  (76 frejmova, 149 KB)
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/appo_w4_evolution.gif  (517 frejmova, 1025 KB)
+
+Prosečni throughput: 2945 koraka/sec
+Metrike: /home/milena/Documents/etf/master/master-rad/results/appo_LunarLander-v3_w4.json
+
+>>> Evaluacija (10 epizoda) | appo_w4
+
+============================================================
+  Evaluacija agenta (Policy inference, bez Ray workera)
+  Checkpoint:  /home/milena/Documents/etf/master/master-rad/results/checkpoints/appo_lunarlander_w4
+  Env:         LunarLander-v3
+  Epizode:     10
+============================================================
+
+ Epizoda |    Nagrada
+----------------------
+       1 |    -145.91
+       2 |    -136.03
+       3 |    -118.02
+       4 |    -100.18
+       5 |    -192.38
+       6 |    -107.18
+       7 |    -112.50
+       8 |    -108.25
+       9 |    -137.34
+      10 |    -145.53
+
+────────────────────────────────────────
+  Prosek:  -130.33  ±  26.09  (std)
+  Min:     -192.38
+  Max:     -100.18
+────────────────────────────────────────
+
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/appo_w4_best.gif  (58 frejmova, 121 KB)
+  Best epizoda (-100) sačuvana: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/appo_w4_best.gif
+  appo_w4: mean=-130.33 ± 26.09
+
+  [PRESKAČEM] SAC nije konfigurisan za lunarlander (nema sac_override — koristiti za kontinualne akcije)
+
+>>> DQN | env_runners=4 | LunarLander-v3
+2026-08-21 00:29:09,152	INFO worker.py:2015 -- Started a local Ray instance. View the dashboard at [1m[32mhttp://127.0.0.1:8265 [39m[22m
+Lokalni Ray klaster podignut.
+2026-08-21 00:29:12,895	WARNING util.py:62 -- Install gputil for GPU system monitoring.
+
+=================================================================
+  Ray RLlib DQN  (off-policy, diskretne akcije)
+  Env:              LunarLander-v3
+  EnvRunners:       4  ← data kolektori
+  TrainFreq:        4 koraka/worker/fragment  (SB3: train_freq)
+  StepsPerIter:     ~1000 (RLlib min_sample=1000)
+  BatchSize:        128  (SB3: batch_size)
+  BufferSize:       50000
+  LearningStarts:   0 koraka
+  Epsilon:          1.0 → 0.1 za 12000 koraka
+  TargetUpdate:     svaka 250 grad. koraka
+  Ukupno koraka:    ~100k (100 itera)
+  Cilj:             nagrada >= 200
+  lr:               0.00063
+  gamma:            0.99
+  net_arch:         [256, 256]
+  double_q:         True
+  dueling:          False
+  Štampanje:        svaka 5. iteracija
+  GIF-ovi:          /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+=================================================================
+
+  Iter |    Steps |     Reward |   Steps/s |  Total(s)
+--------------------------------------------------------------
+
+  Snimam random agenta (pre treninga)...
+  → nagrada=-79
+     1 |     1008 |    -152.34 |       311 |         7
+     5 |     5040 |    -119.81 |       299 |        20
+    10 |    10080 |     -90.61 |       319 |        36
+    15 |    15120 |     -65.68 |       303 |        52
+    20 |    20160 |     -65.95 |       318 |        68
+    25 |    25200 |     -66.31 |       312 |        84
+  [UPOZORENJE] MeanStdFilter nije pronađen — obs se šalju nenormalizovane.
+  [Evolution] Iter 25 | nagrada≈204
+    30 |    30240 |     -62.97 |       313 |       102
+    35 |    35280 |     -60.56 |       310 |       119
+    40 |    40320 |     -40.44 |       313 |       135
+    45 |    45360 |     -18.33 |       310 |       151
+    50 |    50400 |      -1.00 |       313 |       168
+  [Evolution] Iter 50 | nagrada≈-150
+    55 |    55440 |      46.81 |       308 |       185
+    60 |    60480 |      69.50 |       309 |       201
+    65 |    65520 |      75.62 |       311 |       218
+    70 |    70560 |      85.36 |       307 |       234
+    75 |    75600 |      93.98 |       304 |       251
+  [Evolution] Iter 75 | nagrada≈-3
+    80 |    80640 |     116.23 |       306 |       269
+Exception in thread Thread-14:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/learner_thread.py", line 76, in run
+    self.step()
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/multi_gpu_learner_thread.py", line 149, in step
+    buffer_idx, released = self.ready_tower_stacks_buffer.get()
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/milena/Documents/etf/master/master-rad/.venv/lib/python3.12/site-packages/ray/rllib/execution/minibatch_buffer.py", line 51, in get
+    self.buffers[self.idx] = self.inqueue.get(timeout=self.timeout)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/queue.py", line 179, in get
+    raise Empty
+_queue.Empty
+    85 |    85680 |     130.77 |       304 |       286
+    90 |    90720 |     158.72 |       308 |       303
+    95 |    95760 |     161.34 |       307 |       319
+   100 |   100800 |     161.80 |       305 |       336
+  [Evolution] Iter 100 | nagrada≈130
+
+  Checkpoint sačuvan: /home/milena/Documents/etf/master/master-rad/results/checkpoints/dqn_lunarlander_w4
+
+  Generiše GIF-ove → /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander
+    Naučen agent (DQN w=4): nagrada=162
+  GIF: /home/milena/Documents/etf/master/master-rad/results/gifs/lunarlander/dqn_w4_trained.gif  (1000 frejmova, 1631 KB)
+*** SIGTERM received at time=1787265315 on cpu 1 ***
+PC: @     0x7e2ae3598e09  (unknown)  (unknown)
+    @     0x7e2ae3445330  (unknown)  (unknown)
+    @                0x3  (unknown)  (unknown)
+[2026-08-21 00:35:15,692 E 114065 114065] logging.cc:474: *** SIGTERM received at time=1787265315 on cpu 1 ***
+[2026-08-21 00:35:15,696 E 114065 114065] logging.cc:474: PC: @     0x7e2ae3598e09  (unknown)  (unknown)
+[2026-08-21 00:35:15,696 E 114065 114065] logging.cc:474:     @     0x7e2ae3445330  (unknown)  (unknown)
+[2026-08-21 00:35:15,700 E 114065 114065] logging.cc:474:     @                0x3  (unknown)  (unknown)

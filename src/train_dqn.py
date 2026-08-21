@@ -133,7 +133,8 @@ def build_config(
     double_q                — Double DQN (SB3 default: True).
     dueling                 — Dueling DQN (SB3 DQN default: False).
     training_intensity      — gradient_steps/env_step ratio. None = Ray default (1/call).
-                              SB3 gradient_steps=-1 sa train_freq=4 → 1 update/env_step → 1.0
+                              Ako je zadat gradient_steps, računa se kao
+                              gradient_steps * batch_size / train_freq (SB3).
     """
     _patch_replay_buffer_check()
 
@@ -181,6 +182,10 @@ def build_config(
             enable_env_runner_and_connector_v2=False,
         )
     )
+    # CPU: bez ovoga RLlib koristi MultiGPULearnerThread → _queue.Empty
+    # i učenje stane (CartPole eval 9 / kolaps posle iter 20).
+    if num_gpus == 0:
+        cfg.simple_optimizer = True
     return cfg
 
 
@@ -255,7 +260,7 @@ def train(
                  Podržani ključevi: lr, gamma, batch_size, buffer_size, learning_starts,
                                     exploration_timesteps, initial_eps, final_eps,
                                     target_update_interval, train_freq, net_arch,
-                                    double_q, dueling, training_intensity, print_every
+                                    double_q, dueling, training_intensity, gradient_steps, print_every
     max_iterations — broj algo.train() poziva.
                      Ukupno koraka ≈ max_iterations × train_freq × num_workers.
     """
@@ -275,12 +280,18 @@ def train(
     gif_path = Path(gif_dir) if gif_dir else None
     ckpt_path = Path(checkpoint_dir) if checkpoint_dir else None
 
-    train_freq = p.get("train_freq", 4)
+    train_freq = int(p.get("train_freq", 4))
     effective_batch = p.get("batch_size", batch_size)
     effective_lr = p.get("lr", lr)
     net_arch = p.get("net_arch", [256, 256])
     print_every = p.get("print_every", 5)
     min_sample = p.get("min_sample_timesteps_per_iteration", 1000)
+    gradient_steps = p.get("gradient_steps")
+    intensity = p.get("training_intensity", None)
+    if intensity is None and gradient_steps is not None:
+        # SB3: 128 SGD svakih 256 env koraka → intensity = 128*64/256 = 32
+        tfreq = max(train_freq, 1)
+        intensity = float(gradient_steps) * float(effective_batch) / float(tfreq)
 
     # RLlib DQN default je min_sample_timesteps_per_iteration=1000:
     # svaki algo.train() sakuplja bar toliko koraka, ne samo train_freq × workers.
@@ -309,7 +320,7 @@ def train(
         net_arch=net_arch,
         double_q=p.get("double_q", True),
         dueling=p.get("dueling", False),
-        training_intensity=p.get("training_intensity", None),
+        training_intensity=intensity,
         min_sample_timesteps_per_iteration=min_sample,
         num_gpus=num_gpus,
     )
@@ -327,6 +338,8 @@ def train(
     print(f"  LearningStarts:   {p.get('learning_starts', 0)} koraka")
     print(f"  Epsilon:          1.0 → {p.get('final_eps', 0.1)} za {explore_steps} koraka")
     print(f"  TargetUpdate:     svaka {p.get('target_update_interval', 250)} grad. koraka")
+    if gradient_steps is not None:
+        print(f"  gradient_steps:   {int(gradient_steps)}  (SB3) → intensity={intensity:.1f}")
     print(f"  Ukupno koraka:    ~{total_steps_estimate/1e3:.0f}k ({max_iterations} itera)")
     print(f"  Cilj:             nagrada >= {target_reward}")
     print(f"  lr:               {effective_lr}")

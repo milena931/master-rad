@@ -18,36 +18,38 @@ environments:
     checkpoint_every: 25_000
     evolution_every: 15
     description: "Balansiranje štapa — brzo, bez GPU"
-    # APPO CartPole: jednostavan env, default parametri su dovoljni
+    # APPO CartPole: clip 0.4 (APPO default). PPO clip 0.2 na async seče update.
     appo_max_iterations: 80
     appo_evolution_every: 15
     appo_override:
-      lr: 0.0003
+      lr: 0.0005
       entropy_coeff: 0.01
       gamma: 0.99
+      clip_param: 0.4
       rollout_fragment_length: 50
-      train_batch_size: 2000
-      min_sample_timesteps_per_iteration: 2000
-    # DQN CartPole — diskretne akcije, off-policy
-    # RLlib sakuplja ~1000 koraka po algo.train() (min_sample_timesteps_per_iteration)
-    # 25 iter × 1000 = 25k koraka
-    dqn_max_iterations: 25
-    dqn_evolution_every: 8
+      train_batch_size: 4000
+      min_sample_timesteps_per_iteration: 4000
+    # DQN CartPole — sb3/dqn-CartPole-v1 (500 ± 0 za 50k koraka)
+    # https://huggingface.co/sb3/dqn-CartPole-v1
+    # 50 iter × 1000 = 50k. train_freq=256, gradient_steps=128.
+    dqn_max_iterations: 50
+    dqn_evolution_every: 10
     dqn_override:
-      lr: 0.001
+      lr: 0.0023
       gamma: 0.99
       batch_size: 64
-      buffer_size: 10_000
+      buffer_size: 100_000
       learning_starts: 1_000
-      # Istraži 10% od 25k = 2500 koraka
-      exploration_timesteps: 2_500
+      # exploration_fraction=0.16 × 50k = 8000
+      exploration_timesteps: 8_000
       initial_eps: 1.0
       final_eps: 0.04
-      target_update_interval: 100
-      train_freq: 4
+      target_update_interval: 10
+      train_freq: 256
+      gradient_steps: 128
       min_sample_timesteps_per_iteration: 1000
       net_arch: [256, 256]
-      print_every: 5
+      print_every: 1
 
   lunarlander:
     id: LunarLander-v3
@@ -75,13 +77,13 @@ environments:
       sgd_minibatch_size: 64
       num_sgd_iter: 4
     appo_override:
-      # V-trace je obavezan (Ray 2.56). Više SGD epoha + async → politika
-      # eksplodira (lander odleti, obs van Box). Zato 1 epoha, ne 4 kao PPO.
-      lr: 0.0003
+      # V-trace obavezan. clip 0.2 (PPO) na async seče gradijent — zato plato −140.
+      # clip 0.4 / lr 5e-4 / gamma 0.99 = RLlib APPO defaulti.
+      lr: 0.0005
       entropy_coeff: 0.01
-      gamma: 0.999
+      gamma: 0.99
       gae_lambda: 0.98
-      clip_param: 0.2
+      clip_param: 0.4
       num_sgd_iter: 1
       rollout_fragment_length: 200
       train_batch_size: 16_384
