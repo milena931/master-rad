@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # =============================================================================
-# setup_vm.sh — Podizanje GCP VM za master rad PoC
+# setup_vm.sh — Podizanje GCP VM za master rad
 #
 # Pokretanje na svežem GCP Ubuntu 22.04 VM:
 #   chmod +x setup_vm.sh && ./setup_vm.sh
 #
 # Preporučena VM konfiguracija (unutar $300 studentskog kredita):
-#   CartPole/LunarLander: e2-standard-16 (16 vCPU, 64 GB) ~$0.54/h
-#   BipedalWalker head:   e2-standard-8  (8 vCPU, 32 GB)  ~$0.27/h
+#   CartPole/LunarLander: c2d-highcpu-16 (16 vCPU, 32 GB) ~$0.60/h
+#   BipedalWalker head:   c3-standard-8  (8 vCPU, 32 GB)  ~$0.40/h
+#   BipedalWalker workers: c3-highcpu-8  (8 vCPU, 16 GB)  ~$0.09/h spot
 #   Region: us-central1
 #   OS: Ubuntu 22.04 LTS
 #

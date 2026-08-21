@@ -13,9 +13,9 @@ Project: `master-rad-501412`, zona: `us-central1-a`.
 
 | Eksperiment | Fajl | VM | Tip | vCPU / RAM | Cena/h |
 |---|---|---|---|---|---|
-| CartPole, LunarLander | `ray_cluster_lunarlander.yaml` | 1× head | **e2-standard-16** | 16 / 64 GB | ~$0.54 |
-| BipedalWalker | `ray_cluster_bipedalwalker.yaml` | head | **e2-standard-8** | 8 / 32 GB | ~$0.27 |
-| BipedalWalker | isto | 0–8 workers, preemptible | **e2-standard-8** | 8 / 32 GB | ~$0.08 / VM |
+| CartPole, LunarLander | `ray_cluster_lunarlander.yaml` | 1× head | **c2d-highcpu-16** | 16 / 32 GB | ~$0.60 |
+| BipedalWalker | `ray_cluster_bipedalwalker.yaml` | head | **c3-standard-8** | 8 / 32 GB | ~$0.40 |
+| BipedalWalker | isto | 0–8 workers, preemptible | **c3-highcpu-8** | 8 / 16 GB | ~$0.09 / VM |
 
 CartPole/LunarLander su na **jednoj** VM jer je env korak brz — mreža između VM-ova usporava.
 BipedalWalker je na **više** VM-ova jer je fizika spora, pa se distribuiranje isplati.
@@ -25,14 +25,14 @@ BipedalWalker je na **više** VM-ova jer je fizika spora, pa se distribuiranje i
 ray up gcp/ray_cluster_lunarlander.yaml
 ray attach gcp/ray_cluster_lunarlander.yaml
 python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
 ray down gcp/ray_cluster_lunarlander.yaml
 
 # BipedalWalker
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
@@ -47,9 +47,9 @@ ray down gcp/ray_cluster_bipedalwalker.yaml
 curl https://sdk.cloud.google.com | bash
 gcloud init
 
-# Napravi VM (16 jezgara, 64 GB RAM — isto kao ray_cluster_lunarlander.yaml)
+# Napravi VM (16 jezgara, 32 GB RAM — isto kao ray_cluster_lunarlander.yaml)
 gcloud compute instances create master-rad-vm \
-  --machine-type=e2-standard-16 \
+  --machine-type=c2d-highcpu-16 \
   --image-family=ubuntu-2204-lts \
   --image-project=ubuntu-os-cloud \
   --boot-disk-size=60GB \
@@ -59,7 +59,7 @@ gcloud compute instances create master-rad-vm \
 gcloud compute ssh master-rad-vm --zone=us-central1-a
 ```
 
-**Cena:** e2-standard-16 = **~$0.54/h** → za 2h eksperimenata ≈ $1.08
+**Cena:** c2d-highcpu-16 = **~$0.60/h** → za 2h eksperimenata ≈ $1.20
 
 ### Korak 2 — Setup na VM
 
@@ -95,7 +95,7 @@ cd ~/master-rad
 ray start --head --num-cpus=16
 
 python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
 ```
 
 ### Korak 5 — Preuzmi rezultate
@@ -118,15 +118,15 @@ gcloud compute instances delete master-rad-vm --zone=us-central1-a
 
 ## Opcija B — Multi-node (BipedalWalker)
 
-Koristi `gcp/ray_cluster_bipedalwalker.yaml` (e2-standard-8 head + e2-standard-8 preemptible workeri).
-Ne koristi stari `ray_cluster.yaml` osim ako namerno hoćeš manji head (e2-standard-4).
+Koristi `gcp/ray_cluster_bipedalwalker.yaml` (c3-standard-8 head + c3-highcpu-8 preemptible workeri).
+Ne koristi stari `ray_cluster.yaml` osim ako namerno hoćeš manji head (c3-standard-4).
 
 ```bash
 pip install "ray[default]"
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
@@ -137,8 +137,8 @@ ray down gcp/ray_cluster_bipedalwalker.yaml
 | Faza | Gde | Šta |
 |---|---|---|
 | 1. Razvoj | Lokalno | CartPole, debug, mali run-ovi |
-| 2. CartPole + LunarLander | GCP e2-standard-16 | PPO / APPO / DQN, w=1,2,4,8 |
-| 3. BipedalWalker | GCP e2-standard-8 × N | PPO / APPO / SAC, w=1,2,4,8 |
+| 2. CartPole + LunarLander | GCP c2d-highcpu-16 | PPO / APPO / DQN, w=1,2,4,8,16 |
+| 3. BipedalWalker | GCP c3-standard-8 head + c3-highcpu-8 workeri | PPO / APPO / SAC, w=1,2,4,8,16,32 |
 
 ---
 

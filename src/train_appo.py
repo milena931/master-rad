@@ -17,9 +17,6 @@ Zašto APPO za poređenje sa PPO:
   ISTI cilj (PPO clipping) → razlika dolazi isključivo od modela izvršavanja.
   Ovo je centralna eksperimentalna priča: sync vs async, isti algoritam, ista stabilnost.
 
-Napomena: SB3 A2C parametri nisu primenjeni jer A2C nije dostupan u Ray 2.56.
-  APPO je najbliži dostupan algoritam koji je stabilan i skalabilan.
-
 GIF-ovi koje ovaj fajl generiše (ako se zada --gif):
   - random_agent.gif       — agent pre treninga
   - appo_wN_trained.gif    — naučen agent sa N workera

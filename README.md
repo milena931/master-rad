@@ -10,7 +10,7 @@ Ista definicija eksperimenata (`config/experiments.yaml`) važi lokalno i na GCP
 |---|---|
 | **Algoritmi** | PPO, APPO, DQN (diskretne akcije), SAC (kontinualne akcije) |
 | **Okruženja** | CartPole-v1, LunarLander-v3, BipedalWalker-v3 |
-| **Skalabilnost** | 1 / 2 / 4 workera lokalno; na GCP i 8 |
+| **Skalabilnost** | lokalno 1/2/4; GCP do 16 (CartPole/LL) odnosno 32 (BipedalWalker) |
 | **Metrike** | Throughput (koraci/s), speedup, efikasnost, eval mean ± std |
 | **GIF-ovi** | Random agent, naučeni agent, evolucija tokom treninga |
 | **GCP** | Jedna VM za lake envove, multi-VM klaster za BipedalWalker |
@@ -126,28 +126,28 @@ Lake igre (brz env korak) idu na **jednu** VM — mreža između mašina usporav
 
 | Eksperiment | Klaster | VM | Tip | vCPU | RAM | Cena/h |
 |---|---|---|---|---|---|---|
-| CartPole, LunarLander | `gcp/ray_cluster_lunarlander.yaml` | 1× head | **e2-standard-16** | 16 | 64 GB | ~$0.54 |
-| BipedalWalker | `gcp/ray_cluster_bipedalwalker.yaml` | head | **e2-standard-8** | 8 | 32 GB | ~$0.27 |
-| BipedalWalker | isto | workeri 0–8, preemptible | **e2-standard-8** | 8 | 32 GB | ~$0.08 / VM |
+| CartPole, LunarLander | `gcp/ray_cluster_lunarlander.yaml` | 1× head | **c2d-highcpu-16** | 16 | 32 GB | ~$0.60 |
+| BipedalWalker | `gcp/ray_cluster_bipedalwalker.yaml` | head | **c3-standard-8** | 8 | 32 GB | ~$0.40 |
+| BipedalWalker | isto | workeri 0–8, preemptible | **c3-highcpu-8** | 8 | 16 GB | ~$0.09 / VM |
 
 ```bash
 # CartPole + LunarLander
 ray up gcp/ray_cluster_lunarlander.yaml
 ray attach gcp/ray_cluster_lunarlander.yaml
 python src/run_experiments.py --envs cartpole lunarlander \
-    --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
 ray down gcp/ray_cluster_lunarlander.yaml
 
 # BipedalWalker
 ray up gcp/ray_cluster_bipedalwalker.yaml
 ray attach gcp/ray_cluster_bipedalwalker.yaml
 python src/run_experiments.py --envs bipedalwalker \
-    --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+    --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
 ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
 ray down gcp/ray_cluster_bipedalwalker.yaml
 ```
 
-Na GCP uvek `--workers 1 2 4 8`. **Obavezno** `ray down` kad završiš.
+Na GCP: CartPole/LunarLander `--workers 1 2 4 8 16`; BipedalWalker isto plus **32**. **Obavezno** `ray down` kad završiš.
 
 ## Metrike
 

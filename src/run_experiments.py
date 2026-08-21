@@ -168,10 +168,9 @@ def run_all_experiments(
                 )
                 env_results.append(run_dict)
 
-        # ── A2C run-ovi ──────────────────────────────────────────────────────
+        # ── APPO run-ovi ─────────────────────────────────────────────────────
         if "appo" in run_algos:
             appo_params = {**appo_defaults, **env_cfg.get("appo_override", {})}
-            # A2C može imati poseban max_iterations (mnogo malih iteracija vs PPO)
             appo_max_iter = env_cfg.get("appo_max_iterations", effective_max_iter)
 
             for n_workers in effective_workers:

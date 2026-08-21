@@ -1,0 +1,239 @@
+POSTAVKA EKSPERIMENATA
+Master rad — paralelizacija RL treniranja sa Ray RLlib
+Izvor hiperparametara: config/experiments.yaml (jedina definicija, isto lokalno i na GCP)
+GCP yaml-ovi opisuju samo mašine, ne trening.
+
+==============================================================================
+1. CILJ
+==============================================================================
+
+Izmeriti kako paralelni env_runner-i (workeri) utiču na:
+  - throughput (koraci okruženja / sekund)
+  - speedup     T(w=1) / T(w=N)
+  - efikasnost  speedup / N
+  - kvalitet učenja (eval mean ± std, GIF)
+
+Porediti sinhroni on-policy (PPO), asinhroni on-policy (APPO) i off-policy
+(DQN / SAC) na tri Gymnasium okruženja rastuće težine.
+
+==============================================================================
+2. MATRICA (šta se pokreće)
+==============================================================================
+
+Okruženja:
+  cartpole        CartPole-v1        diskretne akcije, cilj 450
+  lunarlander     LunarLander-v3     diskretne akcije, cilj 200
+  bipedalwalker   BipedalWalker-v3   kontinualne akcije, cilj 300
+
+Algoritmi × env:
+
+                 PPO    APPO    DQN    SAC
+  CartPole        da     da      da     —
+  LunarLander     da     da      da     —
+  BipedalWalker   da     da      —      da
+
+Workeri:
+  Lokalno:                    1, 2, 4
+  GCP CartPole / LunarLander: 1, 2, 4, 8, 16
+  GCP BipedalWalker:          1, 2, 4, 8, 16, 32
+
+  w=16 na CartPole/LunarLander (16 vCPU, jedna VM): očekivana saturacija —
+  16 runnera + learner na 16 jezgara. To je namerna tačka na krivi speedup-a.
+  w=16 na BipedalWalker: 2× c3-highcpu-8; w=32: 4× c3-highcpu-8.
+
+Jedan "pun GCP run" = 1 seed × sva polja matrice gore.
+Broj treninga u jednom punom runu:
+  CartPole:      3 algo × 5 worker = 15
+  LunarLander:   3 algo × 5 worker = 15
+  BipedalWalker: 3 algo × 6 worker = 18
+  Ukupno: 48 treninga po seedu
+
+==============================================================================
+3. SOFTVER
+==============================================================================
+
+  Ray RLlib >= 2.40 (stari API stack za PPO/APPO/DQN/SAC u ovom projektu)
+  Gymnasium 1.x  (CartPole-v1, LunarLander-v3, BipedalWalker-v3)
+  PyTorch, CPU (nema GPU — MLP politike)
+  Orkestrator: src/run_experiments.py
+  Trening:     src/train_ray.py (PPO), train_appo.py, train_dqn.py, train_sac.py
+  Eval:        src/evaluate_agent.py  (--evaluate 10)
+  GIF:         src/play_game.py
+
+==============================================================================
+4. BUDŽET KORAKA (fiksan po env/algo, ne raste sa brojem workera)
+==============================================================================
+
+  CartPole
+    PPO:  80 iter × 4000   ≈ 320k koraka
+    APPO: 80 iter × 4000   ≈ 320k koraka
+    DQN:  100 iter × 1000  ≈ 100k koraka
+
+  LunarLander
+    PPO:  65 iter × 16384  ≈ 1.07M koraka   (SB3 Zoo / HF ppo-LunarLander-v2)
+    APPO: 65 iter × 16384  ≈ 1.07M koraka   (isti env-budžet kao PPO)
+    DQN:  100 iter × 1000  ≈ 100k koraka    (SB3 dqn-LunarLander-v2 skala)
+
+  BipedalWalker
+    PPO:  80 iter × 65536  ≈ 5.2M koraka    (SB3 Zoo / HF ppo-BipedalWalker-v3)
+    APPO: 80 iter, min_sample 65536 ≈ 5.2M  (isti env-budžet; APPO batch 16384)
+    SAC:  500 iter × 1024  ≈ 512k koraka
+
+Batch se NAMERNO ne skalira sa brojem workera (isto kao SB3 recept).
+Više workera = brže skupljanje istog batch-a, ne veći batch.
+
+==============================================================================
+5. HIPERPARAMETRI (sažetak; puni u config/experiments.yaml)
+==============================================================================
+
+PPO — CartPole (ppo_defaults):
+  lr 3e-4, gamma 0.99, clip 0.2, train_batch_size 4000
+
+PPO — LunarLander:
+  lr 3e-4, gamma 0.999, gae 0.98, ent 0.01, clip 0.2
+  batch 16384, minibatch 64, 4 epohe
+
+PPO — BipedalWalker:
+  lr 3e-4, gamma 0.999, gae 0.95, ent 0.0, clip 0.18
+  batch 65536, minibatch 4096, 10 epoha, normalize_obs
+
+APPO (nije PPO klon; Ray 2.56 zahteva vtrace=True):
+  clip 0.4, lr 5e-4, 1 SGD epoch, V-trace
+  CartPole batch 4000; LunarLander 16384; BipedalWalker collect 65536 / learn 16384
+  PPO clip 0.2 na async podacima seče update — zato APPO clip 0.4
+
+DQN — CartPole (RLlib-stabilan, ne SB3 Zoo lr=0.0023+128 SGD):
+  lr 5e-4, batch 32, buffer 50k, train_freq 4, n_step 3
+  eps 1.0 → 0.01 za 50k koraka, target update 500
+  Napomena: kolona Reward tokom treninga je ε-greedy; gledati Evolution / eval.
+
+DQN — LunarLander (bliže SB3 Zoo):
+  lr 6.3e-4, batch 128, buffer 50k, train_freq 4
+  eps 1.0 → 0.1 za 12k, target 250
+
+SAC — samo BipedalWalker:
+  lr 7.3e-4, gamma 0.98, tau 0.02, batch 256, buffer 300k
+  64 gradient_steps / 1024 env koraka, net [400, 300], normalize_obs
+  RLlib nema gSDE; MeanStdFilter je obavezan
+
+Eval posle svakog treninga: 10 greedy epizoda (mean ± std) + best GIF.
+
+==============================================================================
+6. INFRASTRUKTURA
+==============================================================================
+
+Lokalno: laptop, worker_counts [1, 2, 4]
+
+GCP  project: master-rad-501412
+     zona:    us-central1-a
+
+  A) CartPole + LunarLander — jedna VM
+     fajl:   gcp/ray_cluster_lunarlander.yaml
+     mašina: 1× c2d-highcpu-16   (16 vCPU, 32 GB)   ~$0.60/h
+     zašto jedna VM: env korak je brz (~0.1 ms); mreža između VM-ova usporava
+
+  B) BipedalWalker — multi-VM
+     fajl:   gcp/ray_cluster_bipedalwalker.yaml
+     head:   1× c3-standard-8    (8 vCPU, 32 GB)    ~$0.40/h
+             (32 GB zbog PPO batch 65536)
+     workeri: c3-highcpu-8 preemptible (8 vCPU, 16 GB)  ~$0.09/h po VM
+             autoscale 0–8; w=16 → 2 worker VM-a; w=32 → 4 worker VM-a
+     zašto multi-VM: Box2D korak ~5–10 ms, computation >> mreža
+
+GPU se ne koristi.
+
+==============================================================================
+7. KOMANDE — JEDAN PUN GCP RUN (1 seed)
+==============================================================================
+
+CartPole + LunarLander:
+  ray up gcp/ray_cluster_lunarlander.yaml
+  ray attach gcp/ray_cluster_lunarlander.yaml
+  python src/run_experiments.py --envs cartpole lunarlander \
+      --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
+  ray down gcp/ray_cluster_lunarlander.yaml
+
+BipedalWalker:
+  ray up gcp/ray_cluster_bipedalwalker.yaml
+  ray attach gcp/ray_cluster_bipedalwalker.yaml
+  python src/run_experiments.py --envs bipedalwalker \
+      --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
+  ray rsync-down gcp/ray_cluster_bipedalwalker.yaml ~/master-rad/results/ ./results/gcp/
+  ray down gcp/ray_cluster_bipedalwalker.yaml
+
+Obavezno ray down — inače se naplaćuje.
+
+Lokalno (isti yaml, manje workera):
+  python src/run_experiments.py --envs cartpole \
+      --algo ppo appo dqn --workers 4 --gif --evaluate 10
+
+==============================================================================
+8. METRIKE ZA RAD
+==============================================================================
+
+  Throughput     koraci/s iz results/*.json
+  Speedup        T(w=1) / T(w=N)   — zidno vreme treninga
+  Efikasnost     speedup / N
+  Eval           mean ± std, 10 epizoda, greedy
+  Kriva učenja   nagrada po iteraciji
+  GIF            random / trained / evolution / best eval
+
+Uporediti i laptop vs GCP (isti hiperparametri) — pokazuje efekat
+deljenih vs posvećenih vCPU i single-VM vs multi-VM.
+
+==============================================================================
+9. KOLIKO RUNOVA ZA RAD
+==============================================================================
+
+Tema je skalabilnost, ne SOTA nagrada.
+
+  1) Jedan pun GCP run (1 seed, matrica iz §2)
+     → tabele speedup / throughput / efikasnost, GIF-ovi, eval.
+     To je glavni rezultat.
+
+  2) Lokalni w=1,2,4 (deo već postoji)
+     → poređenje laptop vs GCP.
+
+  3) Opciono: 3 seeda SAMO na jednoj širini (w=4 ili w=8), svi algo
+     → ako u radu piše "PPO dostiže X ± Y".
+     Ne ponavljati celu matricu 3×.
+
+Ne treba 3 × 48 treninga.
+
+==============================================================================
+10. PROCENA CENE I VREMENA (1 pun GCP run, iz lokalnih merenja)
+==============================================================================
+
+  CartPole + LunarLander na c2d-highcpu-16:
+    zidno ~3.5–4.5 h  ×  $0.60/h  ≈  $2.10–2.70
+
+  BipedalWalker (head uvek upaljen ~10–12 h):
+    head     12 h × $0.40         ≈  $4.80
+    spot w=8 (1 VM), w=16 (2), w=32 (4 × ~$0.09)
+                                  ≈  $1.00–1.50
+    zbir                          ≈  $5.80–6.30
+
+  UKUPNO JEDAN PUN RUN:  ~14–16 h zidno,  ~$8–11
+  (sa ray up / idle / ponovnim startom računati ~$12)
+
+  3 seeda cele matrice: ~$25 i ~40 h — nije potrebno za ovaj rad.
+
+Lokalna orijentacija (već izmereno, laptop):
+  CartPole PPO w=4     ~77 s
+  CartPole APPO w=4    ~141 s
+  CartPole DQN w=4     ~215 s
+  LunarLander PPO w=4  ~506 s   (65 iter, trenutni yaml)
+  BipedalWalker PPO w=1 / w=2 / w=4   ~83 / 49 / 33 min
+  w=1 je najskuplji slot jer traje najduže.
+
+==============================================================================
+11. NAPOMENE ZA TUMAČENJE
+==============================================================================
+
+  - DQN Reward kolona = ε-greedy epizode; greedy je Evolution / --evaluate.
+  - APPO: V-trace je obavezan u Ray 2.56.
+  - Isti env-budžet PPO vs APPO da poređenje bude fer; hiperparametri nisu
+    identični jer async + PPO clip 0.2 ruši učenje.
+  - RLlib SAC ≠ SB3 SAC (nema gSDE).
+  - CartPole PPO nema ppo_override — koristi ppo_defaults (batch 4000).
+)

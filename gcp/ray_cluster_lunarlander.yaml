@@ -6,7 +6,7 @@
 #   dominira nad računanjem. Jedna VM sa 16 jezgara je brža od multi-VM klastera.
 #
 # Konfiguracija:
-#   - Jedna e2-standard-16 VM (16 vCPU, 64 GB RAM)
+#   - Jedna c2d-highcpu-16 VM (16 vCPU, 32 GB) — C3 nema 16 vCPU; highcpu jer mreže ne trebaju 64 GB
 #   - Nema worker VM-ova (max_workers: 0)
 #   - Podržava workers 1, 2, 4, 8, 16 (sve na jednoj mašini)
 #
@@ -15,10 +15,10 @@
 #   ray attach gcp/ray_cluster_lunarlander.yaml
 #   # Na VM:
 #   python src/run_experiments.py --envs cartpole lunarlander \
-#       --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+#       --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
 #   ray down gcp/ray_cluster_lunarlander.yaml
 #
-# Cena: e2-standard-16 = ~$0.54/h → za ~2h = ~$1.08
+# Cena: c2d-highcpu-16 = ~$0.60/h → za ~2h = ~$1.20
 # =============================================================================
 
 cluster_name: master-rad-lunarlander
@@ -38,7 +38,7 @@ available_node_types:
     ray_head_default:
         resources: {}
         node_config:
-            machineType: e2-standard-16   # 16 vCPU, 64 GB — sve na jednoj mašini
+            machineType: c2d-highcpu-16   # 16 vCPU, 32 GB — C3 nema 16; highcpu dovoljan RAM
             disks:
                 - boot: true
                   autoDelete: true

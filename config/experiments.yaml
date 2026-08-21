@@ -7,22 +7,21 @@
 #
 # Referentni modeli (SB3 RL Zoo / HuggingFace):
 #   PPO: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml
-#   A2C: https://huggingface.co/sb3/a2c-LunarLander-v3
-#        https://huggingface.co/sb3/a2c-BipedalWalker-v3
 #
 # GCP mašine (project: master-rad-501412, zona: us-central1-a):
 #   CartPole + LunarLander — gcp/ray_cluster_lunarlander.yaml
-#     1× e2-standard-16 (16 vCPU, 64 GB)  ~$0.54/h
+#     1× c2d-highcpu-16 (16 vCPU, 32 GB)  ~$0.60/h
 #     python src/run_experiments.py --envs cartpole lunarlander \
-#         --algo ppo appo dqn --workers 1 2 4 8 --gif --evaluate 10
+#         --algo ppo appo dqn --workers 1 2 4 8 16 --gif --evaluate 10
 #   BipedalWalker — gcp/ray_cluster_bipedalwalker.yaml
-#     head:  1× e2-standard-8 (8 vCPU, 32 GB)              ~$0.27/h
-#     workers: e2-standard-8 preemptible, autoscale 0–8    ~$0.08/h po VM
+#     head:  1× c3-standard-8 (8 vCPU, 32 GB)              ~$0.40/h
+#     workers: c3-highcpu-8 preemptible, autoscale 0–8     ~$0.09/h po VM
+#     (w=16 → 2 VM; w=32 → 4 VM)
 #     python src/run_experiments.py --envs bipedalwalker \
-#         --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+#         --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
 #   Opšti multi-node (retko) — gcp/ray_cluster.yaml
-#     head: e2-standard-4 (4 vCPU, 16 GB)
-#     workers: e2-standard-8 preemptible
+#     head: c3-standard-4 (4 vCPU, 16 GB)
+#     workers: c3-highcpu-8 preemptible
 
 environments:
 
@@ -200,7 +199,7 @@ environments:
       normalize_obs: true
       print_every: 1
 
-# Skalabilnost lokalno (laptop). Na GCP: --workers 1 2 4 8.
+# Skalabilnost lokalno (laptop). GCP: CartPole/LL 1 2 4 8 16; BipedalWalker +32.
 worker_counts: [1, 2, 4]
 
 # PPO default vrednosti — koriste se ako env nema ppo_override
@@ -213,8 +212,6 @@ ppo_defaults:
   train_batch_size: 4000
 
 # APPO default vrednosti (koriste se ako env nema appo_override)
-# Napomena: kod koristi ime "appo_override"/"appo_defaults" ali interno pokreće APPO.
-# A2C nije dostupan u Ray 2.56 — APPO je najbliži stabilan asinhroni algoritam.
 #
 # Ključne razlike APPO vs PPO:
 #   Isti: lr, gamma, gae_lambda, clip_param, entropy_coeff (isti objektiv!)

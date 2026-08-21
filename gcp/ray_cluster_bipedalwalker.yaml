@@ -6,8 +6,8 @@
 #   computation >> mrežni overhead. Multi-VM klaster stvarno ubrzava trening.
 #
 # Konfiguracija:
-#   - Head node: e2-standard-8 (8 vCPU) — PPO learner
-#   - Worker VM-ovi: e2-standard-8 (8 vCPU), autoscale 0→8 VM-ova
+#   - Head node: c3-standard-8 (8 vCPU, 32 GB) — learner, veći RAM zbog PPO batch 65536
+#   - Worker VM-ovi: c3-highcpu-8 (8 vCPU, 16 GB), autoscale 0→8, preemptible
 #   - Podržava workers 1, 2, 4, 8, 16, 32, 64
 #
 # Kapacitet po broju worker VM-ova:
@@ -21,13 +21,12 @@
 #   ray attach gcp/ray_cluster_bipedalwalker.yaml
 #   # Na VM:
 #   python src/run_experiments.py --envs bipedalwalker \
-#       --algo ppo appo sac --workers 1 2 4 8 --gif --evaluate 10
+#       --algo ppo appo sac --workers 1 2 4 8 16 32 --gif --evaluate 10
 #   ray down gcp/ray_cluster_bipedalwalker.yaml
 #
-# Cena (procena za w=16, ~4h):
-#   Head (e2-standard-8):         $0.27/h × 4h = $1.08
-#   2x Worker (e2-standard-8 spot): $0.08/h × 2 × 4h = $0.64
-#   Ukupno: ~$1.72 od $300 kredita
+# Cena (procena, jedan pun run sa w=32):
+#   Head (c3-standard-8):            ~10–12 h × $0.40 ≈ $4.00–4.80
+#   w=16: 2× c3-highcpu-8 spot; w=32: 4× spot ~$0.09/h
 # =============================================================================
 
 cluster_name: master-rad-bipedalwalker
@@ -48,7 +47,7 @@ available_node_types:
     ray_head_default:
         resources: {}
         node_config:
-            machineType: e2-standard-8   # 8 vCPU — jači head = brži PPO update
+            machineType: c3-standard-8   # 8 vCPU, 32 GB — C3 learner (PPO batch)
             disks:
                 - boot: true
                   autoDelete: true
@@ -62,7 +61,7 @@ available_node_types:
         max_workers: 8       # maksimum 8 worker VM-ova = do w=64
         resources: {}
         node_config:
-            machineType: e2-standard-8   # 8 vCPU, 32 GB po worker VM-u
+            machineType: c3-highcpu-8   # 8 vCPU, 16 GB — samo env simulacija
             disks:
                 - boot: true
                   autoDelete: true
