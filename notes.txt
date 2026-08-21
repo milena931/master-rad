@@ -67,31 +67,14 @@ GCP single-VM w=12
 
 ------------------------------------------------------------------------------
 
-=== IMPALA vs PPO — MINIMALNI BROJ WORKERA ===
+=== APPO vs PPO — MINIMALNI BROJ WORKERA ===
 
-IMPALA sa 1 workerom na BipedalWalker DEGRADIRA umesto da uči:
-  PPO  w=1, iter 0→10:   -113 → -92   ✓ jasno napreduje
-  IMPALA w=1, iter 0→9:  -109 → -111  ✗ blago se pogoršava
-
-Uzrok: IMPALA je asinhroni algoritam — learner ažurira policy dok worker
-JOŠ skuplja iskustvo sa STARIM policy-jem. Kada ti podaci stignu, policy
-se već promenio. V-trace korekcija kompenzuje ovu "zastarelost" (staleness),
-ali sa samo 1 workerom zakasnelost je tolika da korekcija ne pomaže —
-gradijenti ponekad pokazuju u pogrešnom smeru.
+APPO je asinhron: learner ažurira policy dok worker još skuplja iskustvo
+sa starim policy-jem. V-trace koriguje tu zastarelost (staleness), ali sa
+samo 1 workerom zakasnelost je velika i učenje je nestabilnije nego kod PPO.
 
 PPO sa 1 workerom je sinhrono: skupi batch → ažuriraj → skupi novi batch
 sa novim policy-jem. Nula zastarelih podataka.
 
-IMPALA ima minimalni efikasni broj workera ispod kojeg je lošiji od PPO:
-
-  Algoritam | w=1      | w=2       | w=4
-  ----------|----------|-----------|----------
-  PPO       | ✓ uči    | ✓ brže    | ✓ još brže
-  IMPALA    | ✗ degradira | ✓ uči  | ✓ bolje
-
-Zaključak za master rad:
-  Korist od IMPALA počinje tek sa 2+ workera. Sa 1 workerom,
-  sinhronizacioni overhead PPO-a je manji od staleness penala IMPALA.
-  Ovo potvrđuje da IMPALA nije zamena za PPO na lokalnim mašinama sa
-  malo workera — namenjen je GCP klasterima sa 8, 16, 32+ workera.
-  Speedup tabela za IMPALA treba da koristi w=2 kao baseline, ne w=1.
+Zato APPO ima praktičan minimum od 2+ workera. Speedup tabelu za APPO
+čita se sa w=2 kao baseline-om efikasnog učenja, ne w=1.

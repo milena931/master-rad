@@ -1,4 +1,4 @@
-# Master rad PoC — paralelizacija RL treniranja sa Ray RLlib
+# Master rad — paralelizacija RL treniranja sa Ray RLlib
 # Instaliraj: pip install -r requirements.txt
 
 ray[rllib]>=2.40.0

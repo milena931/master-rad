@@ -1,1 +1,1 @@
-"""Master rad PoC — paralelizacija RL treniranja sa Ray RLlib."""
+"""Master rad — paralelizacija RL treniranja sa Ray RLlib."""

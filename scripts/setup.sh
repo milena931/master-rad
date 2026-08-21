@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Setup okruženja za master rad PoC
+# Setup okruženja za master rad
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

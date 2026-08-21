@@ -1,21 +1,16 @@
 """
 Distribuirano treniranje APPO agenta pomoću Ray RLlib.
 
-Šta je APPO:
-  APPO (Asynchronous Proximal Policy Optimization) je asinhroni RL algoritam
-  koji kombinuje prednosti IMPALA-e i PPO-a:
-  - Kao IMPALA: radnici skupljaju iskustvo ASINHRONO, learner ne čeka najsporijeg
-  - Kao PPO: koristi klipovan surrogate objektiv (ne V-trace), stabilan update
+APPO (Asynchronous Proximal Policy Optimization):
+  - radnici skupljaju iskustvo asinhrono; learner ne čeka najsporijeg
+  - PPO clip + V-trace (Ray 2.56 zahteva vtrace=True)
+  - num_sgd_iter=1 da se ne preuči na zastarelim async podacima
+  - clip_param 0.4 (APPO default); PPO clip 0.2 na async podacima seče update
 
-  Intuicija: radnici igraju igru i šalju trajektorije u centralni red čekanja.
-  Learner uzima iz reda i radi PPO update — ali umesto V-trace IS korekcije,
-  koristi PPO-ovo klipovanje koje je robusnije na zastalelost iskustva.
-
-Zašto APPO za poređenje sa PPO:
-  PPO  — sinhroni: learner čeka SVE radnike → idle vreme raste sa brojem radnika
-  APPO — asinhroni: learner nikad ne čeka → bolje iskorišćenje resursa na klasteru
-  ISTI cilj (PPO clipping) → razlika dolazi isključivo od modela izvršavanja.
-  Ovo je centralna eksperimentalna priča: sync vs async, isti algoritam, ista stabilnost.
+Zašto porediti sa PPO:
+  PPO  — sinhroni: learner čeka sve radnike
+  APPO — asinhroni: learner ne čeka
+  Isti env-budžet, različito izvršavanje (sync vs async).
 
 GIF-ovi koje ovaj fajl generiše (ako se zada --gif):
   - random_agent.gif       — agent pre treninga
@@ -111,20 +106,19 @@ def build_config(
     """
     Pravi APPO konfiguraciju za Ray RLlib.
 
-    APPO = Asynchronous PPO: isti parametri kao PPO, asinhrono izvršavanje.
-
-    num_env_runners       — broj asinhrohnih env radnika.
+    num_env_runners       — broj asinhronih env radnika.
     rollout_fragment_length — koraka koje svaki worker skupi pre slanja learner-u.
     train_batch_size      — ukupno koraka pre svakog gradient update-a.
-    clip_param            — PPO clipping (0.2 = standardni PPO).
-    num_sgd_iter          — SGD prolaza po batchu (default 1 za async; PPO=4).
-    gae_lambda            — GAE faktor (isti kao PPO).
-    grad_clip             — maksimalna norma gradijenta (40 = IMPALA standard).
-    normalize_obs         — MeanStdFilter normalizacija (kritično za BipedalWalker).
+    clip_param            — PPO-style clipping (u yaml: 0.4, APPO default).
+    num_sgd_iter          — SGD prolaza po batchu (1 za async; više → staleness).
+    gae_lambda            — GAE faktor.
+    grad_clip             — maksimalna norma gradijenta (RLlib APPO default: 40).
+    normalize_obs         — MeanStdFilter (potrebno za BipedalWalker).
     min_time_s_per_iteration — 0; gating ide preko min_sample, ne preko zida od 10s.
     min_sample_timesteps_per_iteration — koliko env koraka mora da se sakupi po
         algo.train(). Default = train_batch_size. Bez ovoga APPO (async) vraća
         prazne iteracije od ~0.2s.
+    vtrace                — obavezno True u Ray 2.56.
     """
     obs_filter = "MeanStdFilter" if normalize_obs else "NoFilter"
 
@@ -141,7 +135,7 @@ def build_config(
         use_circular_buffer=use_circular_buffer,
     )
     if sgd_minibatch_size is not None:
-        # APPO/IMPALA: AlgorithmConfig.training(minibatch_size=...), ne sgd_minibatch_size.
+        # APPO: AlgorithmConfig.training(minibatch_size=...), ne sgd_minibatch_size.
         training_kwargs["minibatch_size"] = sgd_minibatch_size
     if grad_clip is not None:
         training_kwargs["grad_clip"] = grad_clip

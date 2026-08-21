@@ -1,7 +1,7 @@
 """
 evaluate_agent.py — Evaluacija sačuvanog agenta iz checkpointa.
 
-Učitava Ray RLlib checkpoint (PPO ili IMPALA), pokreće N epizoda,
+Učitava Ray RLlib checkpoint (PPO, APPO, DQN ili SAC), pokreće N epizoda,
 računa prosečnu nagradu ± standardnu devijaciju i čuva best epizodu kao GIF.
 
 Primer korišćenja:
