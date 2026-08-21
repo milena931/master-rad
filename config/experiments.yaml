@@ -29,24 +29,25 @@ environments:
       rollout_fragment_length: 50
       train_batch_size: 4000
       min_sample_timesteps_per_iteration: 4000
-    # DQN CartPole — sb3/dqn-CartPole-v1 (500 ± 0 za 50k koraka)
-    # https://huggingface.co/sb3/dqn-CartPole-v1
-    # 50 iter × 1000 = 50k. train_freq=256, gradient_steps=128.
-    dqn_max_iterations: 50
-    dqn_evolution_every: 10
+    # DQN CartPole — RLlib-stabilan, ne SB3 Zoo.
+    # Zoo lr=0.0023 + 128 SGD na 4 workera: greedy 278→106, eval 69.
+    # Isti recept kao LunarLander DQN koji je učio: mali lr, train_freq=4, bez extra intensity.
+    # Reward kolona je ε-greedy: final_eps=0.02 seče epizode ~150 i kad greedy stoji.
+    # 100 iter × 1000 ≈ 100k; epsilon pada do 0.01 za 50k, pa last 50k može >200.
+    dqn_max_iterations: 100
+    dqn_evolution_every: 20
     dqn_override:
-      lr: 0.0023
+      lr: 0.0005
       gamma: 0.99
-      batch_size: 64
-      buffer_size: 100_000
+      batch_size: 32
+      buffer_size: 50_000
       learning_starts: 1_000
-      # exploration_fraction=0.16 × 50k = 8000
-      exploration_timesteps: 8_000
+      exploration_timesteps: 50_000
       initial_eps: 1.0
-      final_eps: 0.04
-      target_update_interval: 10
-      train_freq: 256
-      gradient_steps: 128
+      final_eps: 0.01
+      target_update_interval: 500
+      train_freq: 4
+      n_step: 3
       min_sample_timesteps_per_iteration: 1000
       net_arch: [256, 256]
       print_every: 1

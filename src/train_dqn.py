@@ -113,6 +113,7 @@ def build_config(
     initial_eps: float = 1.0,
     final_eps: float = 0.1,
     target_update_interval: int = 250,
+    n_step: int = 1,
     net_arch: list[int] | None = None,
     double_q: bool = True,
     dueling: bool = False,
@@ -162,7 +163,7 @@ def build_config(
         double_q=double_q,
         dueling=dueling,
         hiddens=net_arch,
-        n_step=1,
+        n_step=n_step,
     )
     if training_intensity is not None:
         training_kwargs["training_intensity"] = training_intensity
@@ -317,6 +318,7 @@ def train(
         initial_eps=p.get("initial_eps", 1.0),
         final_eps=p.get("final_eps", 0.1),
         target_update_interval=p.get("target_update_interval", 250),
+        n_step=int(p.get("n_step", 1)),
         net_arch=net_arch,
         double_q=p.get("double_q", True),
         dueling=p.get("dueling", False),
@@ -338,6 +340,7 @@ def train(
     print(f"  LearningStarts:   {p.get('learning_starts', 0)} koraka")
     print(f"  Epsilon:          1.0 → {p.get('final_eps', 0.1)} za {explore_steps} koraka")
     print(f"  TargetUpdate:     svaka {p.get('target_update_interval', 250)} grad. koraka")
+    print(f"  n_step:           {int(p.get('n_step', 1))}")
     if gradient_steps is not None:
         print(f"  gradient_steps:   {int(gradient_steps)}  (SB3) → intensity={intensity:.1f}")
     print(f"  Ukupno koraka:    ~{total_steps_estimate/1e3:.0f}k ({max_iterations} itera)")
