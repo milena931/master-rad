@@ -1,0 +1,8 @@
+fajl:        /home/ubuntu/master-rad/results/monitor_lunarlander_ppo_appo_dqn_20260822_094655.csv
+uzoraka:     3869
+trajanje:    7738s
+CPU mean:    14.4%
+CPU max:     100.0%
+RAM mean:    27.4%  (8.59 GB)
+RAM max:     62.5%  (19.57 GB)
+vCPU:        16
